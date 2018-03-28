@@ -1,23 +1,35 @@
+'''
+Created on Mar 26, 2018
+
+@author: Hao Wu
+'''
+
 import numpy as np
 import cv2
 import PySpin
-import time
-"""This example is a PyDAQmx version of the ContAcq_IntClk.c example
-It illustrates the use of callback functions
 
-This example demonstrates how to acquire a continuous amount of
-data using the DAQ device's internal clock. It incrementally stores the data
-in a Python list.
-"""
-
+'''
+Camera Dev is the FoundryScope Driver for Point-Grey cameras. It is calling the 
+FLIR Spinnaker Python binding PySpin. The newest version of PySpin can be
+obtained from the FLIR official website
+'''
 class CameraDev(object):
     
     def __init__(self,camera_id):
-        #camera id is 0,1,2...
+        '''
+        camera id is 0,1,2,..., the maximum is the number of point-grey camera
+        connected to the computer
+        '''
         self.camera_id=camera_id
-        
+        self.open()
+
+
+    def open(self):
+        '''
+        open up the connection to the camera
+        '''
         try:
-        #find the list of camera and choose the right camera
+            #find the list of camera and choose the right camera
             self.system = PySpin.System.GetInstance()
             self.cam_list = self.system.GetCameras()
             
@@ -36,9 +48,13 @@ class CameraDev(object):
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             return None
-
+        
     def start(self):
+        '''
+        Start the continous acquisition mode
+        '''
         try:
+            #get handle for acquisition mode
             node_acquisition_mode = PySpin.CEnumerationPtr(self.nodemap.GetNode("AcquisitionMode"))
             if not PySpin.IsAvailable(node_acquisition_mode) or not PySpin.IsWritable(node_acquisition_mode):
                 print("Unable to set acquisition mode to continuous (enum retrieval). Aborting...")
@@ -81,6 +97,9 @@ class CameraDev(object):
         return image_data
     
     def stop(self):
+        '''
+        stop the continuous acquisition mode
+        '''
         try:
             self.cam.EndAcquisition()
         except PySpin.SpinnakerException as ex:
@@ -88,7 +107,11 @@ class CameraDev(object):
                 return None
         
     def close(self):
+        '''
+        close the camera instance and delete itself
+        '''
         try:
+            #release the devices properly
             self.cam.DeInit()
             del self.cam
             self.cam_list.Clear()
@@ -96,18 +119,42 @@ class CameraDev(object):
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             return None
+        
+    def get_model(self):
+        """
+        This function get the model name
+        """
+        try:
+            node_device_information = PySpin.CCategoryPtr(self.nodemap_tldevice.GetNode("DeviceInformation"))
+    
+            if PySpin.IsAvailable(node_device_information) and PySpin.IsReadable(node_device_information):
+                features = node_device_information.GetFeatures()
+                for feature in features:
+                    node_feature = PySpin.CValuePtr(feature)
+                    if node_feature.GetName() == 'DeviceModelName':
+                        return node_feature.ToString()
+    
+            else:
+                return 'N/A'
+            
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+            return 'N/A'
     
 if __name__ == '__main__':
     print('begin test')
     camera = CameraDev(1)
-    
+    camera2 = CameraDev(0)
+    print(camera.get_model())
     print('connecting camera')
     print('starting camera')
     camera.start()
+    camera2.start()
     print('read frame')
     while(True):
     # Display the resulting frame
         image = camera.read()
+        image2 = camera2.read()
         cv2.imshow('frame',image)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -119,3 +166,5 @@ if __name__ == '__main__':
     
     camera.stop()
     camera.close()
+    camera2.stop()
+    camera2.close()

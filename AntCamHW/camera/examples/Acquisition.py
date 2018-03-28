@@ -278,7 +278,7 @@ def run_single_camera(cam):
         nodemap = cam.GetNodeMap()
 
         # Acquire images
-        result &= acquire_images(cam, nodemap, nodemap_tldevice)
+        #result &= acquire_images(cam, nodemap, nodemap_tldevice)
 
         # Deinitialize camera
         cam.DeInit()

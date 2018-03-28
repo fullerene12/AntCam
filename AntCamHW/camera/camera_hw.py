@@ -16,6 +16,8 @@ class CameraHW(HardwareComponent):
 
     def setup(self,camera_id=0):
         self.settings.New(name='camera_id',dtype=int,initial=camera_id,ro=False)
+        self.setting.New(name ='model', dtype = str, initial ='N/A',ro = True)
+        self.setting.New(name ='serial_number', dtype = str, initial ='N/A',ro = True)
         self.settings.New(name='file_name',dtype=str,initial='D:\Hao\Data\Twitch.avi',ro=True)
                 
     def connect(self):
