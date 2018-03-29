@@ -174,7 +174,7 @@ def acquire_images(cam, nodemap, nodemap_tldevice):
                     #  When converting images, color processing algorithm is an
                     #  optional parameter.
                     image_converted = image_result.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
-
+                    
                     # Create a unique filename
                     if device_serial_number:
                         filename = "Acquisition-%s-%d.jpg" % (device_serial_number, i)

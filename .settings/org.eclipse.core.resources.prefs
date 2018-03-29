@@ -1,4 +1,6 @@
 eclipse.preferences.version=1
 encoding//AntCamHW/camera/examples/Acquisition.py=utf-8
 encoding//AntCamHW/camera/examples/Enumeration.py=utf-8
+encoding//AntCamHW/camera/examples/Exposure_QuickSpin.py=utf-8
 encoding//AntCamHW/camera/examples/ImageEvents.py=utf-8
+encoding//AntCamHW/camera/examples/ImageFormatControl.py=utf-8
