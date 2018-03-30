@@ -5,13 +5,40 @@ Created on Mar 26, 2018
 '''
 from math import sqrt
 from ScopeFoundry import Measurement
+from ScopeFoundry.measurement import MeasurementQThread
 from ScopeFoundry.helper_funcs import sibling_path, load_qt_ui_file
 from ScopeFoundry import h5_io
 import pyqtgraph as pg
 import numpy as np
 import time
 import cv2
+import PySpin
+from qtpy import QtCore
 from qtpy.QtCore import QThread, QTimer, QTimerEvent
+
+class SubMeasurementQThread(MeasurementQThread):
+    measurement_interrupted = QtCore.Signal(())
+    
+    def __init__(self, run_func, parent=None):
+        super(MeasurementQThread, self).__init__(parent)
+        self.run_func = run_func
+        self.interrupt_measurement_called = False
+        
+    def run(self):
+        try:
+            while not self.interrupt_measurement_called:
+                pass
+                if self.interrupt_measurement_called:
+                    break
+        finally:
+            if self.interrupt_measurement_called:
+                self.measurement_interrupted.emit()
+                self.interrupt_measurement_called = False
+    
+    @QtCore.Slot()    
+    def interrupt(self):
+        self.interrupt_measurement_called = True
+    
 
 class AntWatchMeasure(Measurement):
     
@@ -43,10 +70,10 @@ class AntWatchMeasure(Measurement):
         self.settings.New('writing_flag',dtype=bool,initial = False, ro= False)
         
         # Create empty numpy array to serve as a buffer for the acquired data
-        self.track_buffer = np.zeros((1200,1920),dtype=np.uint8)
-        self.wide_buffer = np.zeros((2048,2048), dtype=np.uint8)
-        self.track_disp_buffer = np.zeros((1200,1920),dtype=np.uint8)
-        self.wide_disp_buffer = np.zeros((2048,2048), dtype=np.uint8)
+        self.wide_buffer = np.zeros((960,600),dtype=np.uint8)
+        self.track_buffer = np.zeros((1024,1024), dtype=np.uint8)
+        self.wide_disp_buffer = np.zeros((960,600),dtype=np.uint8)
+        self.track_disp_buffer = np.zeros((1024,1024), dtype=np.uint8)
         
         # Define how often to update display during a run
         self.display_update_period = 0.02
@@ -95,11 +122,11 @@ class AntWatchMeasure(Measurement):
             self.wide_disp_buffer[:] = self.wide_cam.read_disp()
             self.track_cam_image.setImage(self.track_disp_buffer)
             self.wide_cam_image.setImage(self.wide_disp_buffer)
+        except TypeError as ex:
+            print("Error: %s" % ex)
 
-            pass
-        except TypeError:
-            pass
-
+    def pre_run(self):
+        pass
     
     def run(self):
         """
@@ -126,7 +153,8 @@ class AntWatchMeasure(Measurement):
         # We use a try/finally block, so that if anything goes wrong during a measurement,
         # the finally block can clean things up, e.g. close the data file object.
         try:
-            
+            self.track_cam.config_event(self.track_repeat)
+            self.wide_cam.config_event(self.wide_repeat)
             self.track_cam.start()
             self.wide_cam.start()
             # Will run forever until interrupt is called.
@@ -140,14 +168,10 @@ class AntWatchMeasure(Measurement):
             self.acq_thread.setPriority(QThread.TimeCriticalPriority)
             self.start_time = time.clock()
             while not self.interrupt_measurement_called:
-                current_time = time.clock() - self.start_time
-                current_time_convert = int((current_time-int(current_time))*10000)
-                if current_time_convert % 200 == 1:
-                    self.repeat()
 
                 # wait between readings.
                 # We will use our sampling_period settings to define time
-                #time.sleep(self.settings['sampling_period'])
+                time.sleep(self.settings['sampling_period'])
                 
                 if self.interrupt_measurement_called:
                     # Listen for interrupt_measurement_called flag.
@@ -162,16 +186,38 @@ class AntWatchMeasure(Measurement):
             time.sleep(0.1)
             self.track_cam.stop()
             self.wide_cam.stop()
+            self.track_cam.remove_event()
+            self.wide_cam.remove_event()
             
-    def repeat(self):
-        time1 = time.time()
-        self.track_buffer[:] = self.track_cam.read()
-        self.wide_buffer[:] = self.wide_cam.read()
-        
-        time2 = time.time()  
+        def post_run(self):
+            pass
+            
+    def track_repeat(self):
+        try:
+            time1 = time.clock()
+            self.track_buffer = self.track_cam.get_buffer()
+            time2 = time.clock()
+            print(time2-time1,end ='\r')
+        except TypeError as ex:
+            print("Error: %s" % ex)
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+        except ValueError as ex:
+            print("Error: %s" % ex)
+            
+    def wide_repeat(self):
+        try:
+            self.wide_buffer = self.wide_cam.get_buffer()
+        except TypeError as ex:
+            print("Error: %s" % ex)
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+        except ValueError as ex:
+            print("Error: %s" % ex)
+          
                 
 
-        print(time2-time1,end ='\r')
+        
 
 #                
                 

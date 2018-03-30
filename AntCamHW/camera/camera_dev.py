@@ -8,7 +8,7 @@ import numpy as np
 import cv2
 import PySpin
 import time
-
+from .cam_helper_classes import ImageEventHandler
 '''
 Camera Dev is the FoundryScope Driver for Point-Grey cameras. It is calling the 
 FLIR Spinnaker Python binding PySpin. The newest version of PySpin can be
@@ -57,7 +57,11 @@ class CameraDev(object):
              
             #load first frame of image for the first image buffer
             self.start()
-            self.update_buffer()
+            self.buffer = self.cam.GetNextImage()
+            self.buffer.Release()
+            self.disp_buffer = PySpin.Image.Create(self.buffer)
+            self.record_buffer = PySpin.Image.Create(self.buffer)
+            self.comp_buffer = PySpin.Image.Create(self.buffer)
             self.stop()
             
             
@@ -103,43 +107,106 @@ class CameraDev(object):
         '''
         try:
             self.buffer = self.cam.GetNextImage()
+            self.update_disp_buffer()
+            self.update_record_buffer()
+            self.update_comp_buffer()
             self.buffer.Release()
             #return image_converted
             
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             
+    def update_disp_buffer(self):
+        try:
+            self.disp_buffer.DeepCopy(self.buffer)
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+            
+    def update_record_buffer(self):
+        try:
+            self.record_buffer.DeepCopy(self.buffer)
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+            
+    def update_comp_buffer(self):
+        try:
+            self.comp_buffer.DeepCopy(self.buffer)
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+            
+    def update_aux_buffer(self):
+        self.update_disp_buffer()
+        self.update_record_buffer()
+        self.update_comp_buffer()
+            
     def get_buffer(self):
         '''
         read the numpy buffer
         '''
         try:
-            return self.buffer.GetData().reshape((self.height,self.width))
+            return self.to_numpy(self.buffer)
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
         except ValueError as ex:
-            print("Error: %s" % ex)
-    
-    def update_disp_buffer(self):
-        try:
-            self.disp_buffer = self.buffer.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
-        except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             
     def get_disp_buffer(self):
         try:
-            self.update_disp_buffer()
-            return self.disp_buffer.GetData().reshape((self.height,self.width))
+            return self.to_numpy(self.disp_buffer)
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
         except ValueError as ex:
+            print("Error: %s" % ex)
+            
+    def get_record_buffer(self):
+        try:
+            return self.to_numpy(self.record_buffer)
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+        except ValueError as ex:
+            print("Error: %s" % ex)
+            
+    def get_comp_buffer(self):
+        try:
+            return self.to_numpy(self.comp_buffer)
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+        except ValueError as ex:
+            print("Error: %s" % ex)
+            
+    def to_numpy(self,image):
+        try:
+            data = image.GetData()
+            if data.size == self.height * self.width:
+                data = data.reshape((self.height,self.width))
+                data = data.transpose()
+                #data = np.fliplr(data)
+                #data = np.flipud(data)
+                return data
+            else:
+                raise TypeError('Data is not the right size, ignore this trial')
+        except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             
     def read(self):
         self.update_buffer()
         return self.get_buffer()
     
-    def save(self):
+    def config_event(self, run_func):
+        try:
+            self.event = ImageEventHandler(self,run_func)
+            self.cam.RegisterEvent(self.event)
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+        
+    def remove_event(self):
+        try:
+            self.cam.UnregisterEvent(self.event)
+            del self.event
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+            
+    def save_frame(self):
         pass
         
     def stop(self):
@@ -159,6 +226,10 @@ class CameraDev(object):
             #release the devices properly
             self.cam.DeInit()
             del self.buffer
+            del self.disp_buffer
+            del self.record_buffer
+            del self.comp_buffer
+
             del self.cam
             self.cam_list.Clear()
             self.system.ReleaseInstance()
@@ -167,7 +238,6 @@ class CameraDev(object):
             
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
-            return None
         
     def get_model(self):
         """
@@ -302,51 +372,74 @@ class CameraDev(object):
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
         
-        
-    
+    def get_video_mode(self):
+        try:
+            node_video_mode = PySpin.CEnumerationPtr(self.nodemap.GetNode("VideoMode"))
+            return int(node_video_mode.GetCurrentEntry().GetSymbolic()[4])
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+            
+    def set_video_mode(self,mode_number):
+        try:
+            node_video_mode = PySpin.CEnumerationPtr(self.nodemap.GetNode("VideoMode"))
+            Mode0 = node_video_mode.GetEntryByName("Mode0")
+            Mode1 = node_video_mode.GetEntryByName("Mode1")
+            Mode2 = node_video_mode.GetEntryByName("Mode2")
+            mode_list = [Mode0,Mode1,Mode2]
+            
+            node_video_mode.SetIntValue(mode_list[mode_number].GetValue())
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+            
 if __name__ == '__main__':
     print('begin test')
     camera = CameraDev(1)
-    #camera.get_auto_framerate()
-    camera2 = CameraDev(0)
-    print(camera.get_model())
-    print('connecting camera')
-    print('starting camera')
-    camera.start()
-    camera2.start()
-    print('read frame')
-    tot_time = 0
-    i = 0
-    image = np.zeros((2048,2048),dtype=np.uint8)
-    image2 = np.zeros((1200,1920),dtype=np.uint8)
-    start_t = time.time()
     
-    for j in range(100):
-        camera.update_buffer()
-        camera.update_disp_buffer()
-    end_t = time.time()
-    print(end_t-start_t)
-    camera
-    while(True):
-    # Display the resulting frame
-        i +=1
-         
-        
-        image[:] = camera.read()
-        image2[:] = camera2.read()
-        cv2.imshow('frame',image)
-        cv2.imshow('frame2',image2)
-        
-        
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-     
-    # When everything done, release the capture
-    cv2.destroyAllWindows()
-       
-    print('stop acquisition')
-     
-    camera2.stop()
-    camera2.close()
+    print(camera.get_video_mode())
+    camera.set_video_mode(2)
+    print(camera.get_video_mode())
+    
+    camera.start()
+#     #camera.get_auto_framerate()
+#     camera2 = CameraDev(0)
+#     print(camera.get_model())
+#     print('connecting camera')
+#     print('starting camera')
+#     camera.start()
+#     camera2.start()
+#     print('read frame')
+#     tot_time = 0
+#     i = 0
+#     image = np.zeros((2048,2048),dtype=np.uint8)
+#     image2 = np.zeros((1200,1920),dtype=np.uint8)
+#     start_t = time.time()
+#     
+#     for j in range(100):
+#         camera.update_buffer()
+#         camera.update_disp_buffer()
+#     end_t = time.time()
+#     print(end_t-start_t)
+#     camera
+#     while(True):
+#     # Display the resulting frame
+#         i +=1
+#          
+#         
+#         image[:] = camera.read()
+#         image2[:] = camera2.read()
+#         cv2.imshow('frame',image)
+#         cv2.imshow('frame2',image2)
+#         
+#         
+#         if cv2.waitKey(1) & 0xFF == ord('q'):
+#             break
+#      
+#     # When everything done, release the capture
+#     cv2.destroyAllWindows()
+#        
+#     print('stop acquisition')
+#      
+#     camera2.stop()
+#     camera2.close()
     camera.stop()
     camera.close()

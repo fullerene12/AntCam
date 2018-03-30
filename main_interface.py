@@ -22,10 +22,10 @@ class AntCamApp(BaseMicroscopeApp):
         print("Adding Hardware Components")
         from AntCamHW.camera.camera_hw import CameraHW
         track_cam = CameraHW(self)
-        track_cam.settings.camera_id.update_value(0)
+        track_cam.settings.camera_id.update_value(1)
         track_cam.name = 'track_cam'
         wide_cam = CameraHW(self)
-        wide_cam.settings.camera_id.update_value(1)
+        wide_cam.settings.camera_id.update_value(0)
         wide_cam.name = 'wide_cam'
         self.add_hardware(track_cam)
         self.add_hardware(wide_cam)
