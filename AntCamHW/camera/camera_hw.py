@@ -22,6 +22,7 @@ class CameraHW(HardwareComponent):
         self.settings.New(name = 'auto_exposure', dtype = bool, initial = True, ro = False)
         self.settings.New(name = 'exposure_time', dtype = float, initial = 1000, ro = False)
         self.settings.New(name = 'video_mode', dtype = int, initial = 0, ro = False, vmin = 0, vmax = 2)
+        self.settings.New(name = 'frame_rate', dtype = float, initial = 30, ro = False, vmin = 0, vmax = 100)
         
         
                 
@@ -36,11 +37,13 @@ class CameraHW(HardwareComponent):
         self.settings.auto_exposure.hardware_read_func = self._dev.get_auto_exposure
         self.settings.exposure_time.hardware_read_func = self._dev.get_exp
         self.settings.video_mode.hardware_read_func = self._dev.get_video_mode
+        self.settings.frame_rate.hardware_read_func = self._dev.get_frame_rate
         
         #define set functions
         self.settings.auto_exposure.hardware_set_func = self._dev.set_auto_exposure
         self.settings.exposure_time.hardware_set_func = self._dev.set_exp
         self.settings.video_mode.hardware_set_func = self._dev.set_video_mode
+        self.settings.frame_rate.hardware_set_func = self._dev.set_frame_rate
         
         #read camera info
         self.read_from_hardware()
@@ -56,8 +59,8 @@ class CameraHW(HardwareComponent):
     def read(self):
         return self._dev.read()
     
-    def read_disp(self):
-        return self._dev.get_disp_buffer()
+    def read_output_data(self):
+        return self._dev.get_disp_buffer_data()
     
     def write(self):
         self._dev.write()
@@ -80,10 +83,12 @@ class CameraHW(HardwareComponent):
             self.settings.auto_exposure.hardware_read_func = None
             self.settings.exposure_time.hardware_read_func = None
             self.settings.video_mode.hardware_read_func = None
+            self.settings.frame_rate.hardware_read_func = None
             #remove set functions
             self.settings.auto_exposure.hardware_set_func = None
             self.settings.exposure_time.hardware_set_func = None
             self.settings.video_mode.hardware_set_func = None
+            self.settings.frame_rate.hardware_set_func = None
             
             self._dev.close()
             del self._dev

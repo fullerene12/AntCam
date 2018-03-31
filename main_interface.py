@@ -30,6 +30,9 @@ class AntCamApp(BaseMicroscopeApp):
         self.add_hardware(track_cam)
         self.add_hardware(wide_cam)
         
+        from AntCamHW.camera.recorder_hw import RecorderHW
+        self.add_hardware(RecorderHW(self))
+        
         from AntCamHW.daq_timer.daq_timer_hw import DAQTimerHW
         #self.add_hardware(DAQTimerHW(self))
 
@@ -53,6 +56,7 @@ if __name__ == '__main__':
     
     app.hardware['track_cam'].connected.update_value(True)
     app.hardware['wide_cam'].connected.update_value(True)
+    app.hardware['recorder'].connected.update_value(True)
     #app.hardware['daq_timer'].connected.update_value(True)
     
     sys.exit(app.exec_())

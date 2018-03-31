@@ -34,7 +34,7 @@ class AviType:
     H264 = 2
 
 chosenAviType = AviType.UNCOMPRESSED  # change me!
-NUM_IMAGES = 10  # number of images to use in AVI file
+NUM_IMAGES = 200  # number of images to use in AVI file
 
 
 def save_list_to_avi(nodemap, nodemap_tldevice, images):
@@ -77,8 +77,9 @@ def save_list_to_avi(nodemap, nodemap_tldevice, images):
             return False
 
         framerate_to_set = node_acquisition_framerate.GetValue()
+        print(framerate_to_set)
 
-        print("Frame rate to be set to %d..." % framerate_to_set)
+        #print("Frame rate to be set to %d..." % framerate_to_set)
 
         # Select option and open AVI filetype with unique filename
         #
@@ -134,11 +135,11 @@ def save_list_to_avi(nodemap, nodemap_tldevice, images):
         # *** NOTES ***
         # Although the video file has been opened, images must be individually
         # appended in order to construct the video.
-        print("Appending %d images to AVI file: %s.avi..." % (len(images), avi_filename))
+        #print("Appending %d images to AVI file: %s.avi..." % (len(images), avi_filename))
 
         for i in range(len(images)):
             avi_recorder.AVIAppend(images[i])
-            print("Appended image %d..." % i)
+            #print("Appended image %d..." % i)
 
         # Close AVI file
         #

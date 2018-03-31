@@ -59,9 +59,8 @@ class CameraDev(object):
             self.start()
             self.buffer = self.cam.GetNextImage()
             self.buffer.Release()
-            self.disp_buffer = PySpin.Image.Create(self.buffer)
+            self.output_buffer = PySpin.Image.Create(self.buffer)
             self.record_buffer = PySpin.Image.Create(self.buffer)
-            self.comp_buffer = PySpin.Image.Create(self.buffer)
             self.stop()
             
             
@@ -107,39 +106,32 @@ class CameraDev(object):
         '''
         try:
             self.buffer = self.cam.GetNextImage()
-            self.update_disp_buffer()
-            self.update_record_buffer()
-            self.update_comp_buffer()
+            self.update_aux_buffer()
             self.buffer.Release()
             #return image_converted
             
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             
-    def update_disp_buffer(self):
+    def update_output_buffer(self):
         try:
-            self.disp_buffer.DeepCopy(self.buffer)
+            if not self.output_buffer.IsInUse():
+                self.output_buffer.DeepCopy(self.buffer)
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             
     def update_record_buffer(self):
         try:
-            self.record_buffer.DeepCopy(self.buffer)
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-            
-    def update_comp_buffer(self):
-        try:
-            self.comp_buffer.DeepCopy(self.buffer)
+            if not self.record_buffer.IsInUse():
+                self.record_buffer.DeepCopy(self.buffer)
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             
     def update_aux_buffer(self):
-        self.update_disp_buffer()
+        self.update_output_buffer()
         self.update_record_buffer()
-        self.update_comp_buffer()
-            
-    def get_buffer(self):
+        
+    def get_buffer_data(self):
         '''
         read the numpy buffer
         '''
@@ -150,15 +142,15 @@ class CameraDev(object):
         except ValueError as ex:
             print("Error: %s" % ex)
             
-    def get_disp_buffer(self):
+    def get_output_buffer_data(self):
         try:
-            return self.to_numpy(self.disp_buffer)
+            return self.to_numpy(self.output_buffer)
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
         except ValueError as ex:
             print("Error: %s" % ex)
             
-    def get_record_buffer(self):
+    def get_record_buffer_data(self):
         try:
             return self.to_numpy(self.record_buffer)
         except PySpin.SpinnakerException as ex:
@@ -166,9 +158,31 @@ class CameraDev(object):
         except ValueError as ex:
             print("Error: %s" % ex)
             
-    def get_comp_buffer(self):
+    def get_buffer(self):
+        '''
+        read the numpy buffer
+        '''
         try:
-            return self.to_numpy(self.comp_buffer)
+            if not self.self.buffer.IsInUse():
+                return PySpin.Image.Create(self.buffer)
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+        except ValueError as ex:
+            print("Error: %s" % ex)
+            
+    def get_output_buffer(self):
+        try:
+            if not self.output_buffer.IsInUse():
+                return PySpin.Image.Create(self.output_buffer)
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+        except ValueError as ex:
+            print("Error: %s" % ex)
+            
+    def get_record_buffer(self):
+        try:
+            if not self.record_buffer.IsInUse():
+                return PySpin.Image.Create(self.record_buffer)
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
         except ValueError as ex:
@@ -176,25 +190,68 @@ class CameraDev(object):
             
     def to_numpy(self,image):
         try:
-            data = image.GetData()
-            if data.size == self.height * self.width:
-                data = data.reshape((self.height,self.width))
-                data = data.transpose()
-                #data = np.fliplr(data)
-                #data = np.flipud(data)
-                return data
+            if not image.IsInUse():
+                temp_buffer = PySpin.Image.Create(image)
             else:
-                raise TypeError('Data is not the right size, ignore this trial')
+                print('in use')
+                return np.ones((self.height,self.width),dtype = np.uint8)
+            if temp_buffer.IsIncomplete():
+                print('in complete')
+                return np.ones((self.height,self.width),dtype = np.uint8)
+            data = temp_buffer.GetData()
+            del temp_buffer
+            if not type(data) == bytes:
+                if data.size == self.height * self.width:
+                    data = data.reshape((self.height,self.width))
+                    #data = np.fliplr(data)
+                    #data = np.flipud(data)
+                    return data
+                else:
+                    print(type(data))
+                    raise TypeError('Data is not the right size, ignore this trial')
+            else:
+                raise TypeError('Data is bytes')
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
+        except Exception as ex:
+            print("Error: %s" % ex)
+            
+        return np.ones((self.height,self.width),dtype = np.uint8)
+    
+    def to_numpy2(self,image):
+        try:
+            temp_buffer = PySpin.Image.Create(image)
+            if temp_buffer.IsIncomplete():
+                print('in complete')
+                return np.ones((self.height,self.width),dtype = np.uint8)
+            data = temp_buffer.GetData()
+            del temp_buffer
+            if not type(data) == bytes:
+                if data.size == self.height * self.width:
+                    data = data.reshape((self.height,self.width))
+                    #data = np.fliplr(data)
+                    #data = np.flipud(data)
+                    return data
+                else:
+                    print(type(data))
+                    raise TypeError('Data is not the right size, ignore this trial')
+            else:
+                raise TypeError('Data is bytes')
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+        except Exception as ex:
+            print("Error: %s" % ex)
+            
+        return np.ones((self.height,self.width),dtype = np.uint8)
+                
             
     def read(self):
         self.update_buffer()
-        return self.get_buffer()
+        return self.get_buffer_data()
     
     def config_event(self, run_func):
         try:
-            self.event = ImageEventHandler(self,run_func)
+            self.event = ImageEventHandler(self, run_func)
             self.cam.RegisterEvent(self.event)
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
@@ -206,9 +263,6 @@ class CameraDev(object):
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             
-    def save_frame(self):
-        pass
-        
     def stop(self):
         '''
         stop the continuous acquisition mode
@@ -226,15 +280,15 @@ class CameraDev(object):
             #release the devices properly
             self.cam.DeInit()
             del self.buffer
-            del self.disp_buffer
+            del self.output_buffer
             del self.record_buffer
-            del self.comp_buffer
 
             del self.cam
-            self.cam_list.Clear()
-            self.system.ReleaseInstance()
-            del self.cam_list
-            del self.system
+            if not self.system.isInUse():
+                self.cam_list.Clear()
+                self.system.ReleaseInstance()
+                del self.cam_list
+                del self.system
             
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
@@ -322,7 +376,27 @@ class CameraDev(object):
            
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
+            
+    def get_frame_rate(self):
+        '''
+        get frame rate in Hz
+        '''
+        try:
+            return self.cam.AcquisitionFrameRate.GetValue()
+
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
     
+    def set_frame_rate(self,fr):
+        '''
+        set frame rate in Hz
+        '''
+        try:
+            return self.cam.AcquisitionFrameRate.SetValue(fr)
+
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+            
     def get_auto_exposure(self):
         '''
         get the status of auto exposure, either on or off
@@ -398,6 +472,7 @@ if __name__ == '__main__':
     print(camera.get_video_mode())
     camera.set_video_mode(2)
     print(camera.get_video_mode())
+    print(camera.get_frame_rate())
     
     camera.start()
 #     #camera.get_auto_framerate()
@@ -416,7 +491,7 @@ if __name__ == '__main__':
 #     
 #     for j in range(100):
 #         camera.update_buffer()
-#         camera.update_disp_buffer()
+#         camera.update_output_buffer()
 #     end_t = time.time()
 #     print(end_t-start_t)
 #     camera

@@ -47,10 +47,12 @@ class ImageEventHandler(PySpin.ImageEvent):
         """
         # update all buffers in the camera
         self.cam.buffer = image
-        self.cam.update_aux_buffer()
+        self.cam.update_disp_buffer()
+        self.cam.update_record_buffer()
         
         #run user_defined functions
-        self.run_func
+        self.run_func()
+        self._image_count += 1
         
     def get_image_count(self):
         """
@@ -61,3 +63,5 @@ class ImageEventHandler(PySpin.ImageEvent):
         """
         return self._image_count
         
+if __name__ == '__main__':
+    pass
