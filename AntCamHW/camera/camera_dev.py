@@ -16,12 +16,12 @@ obtained from the FLIR official website
 '''
 class CameraDev(object):
     
-    def __init__(self,camera_id):
+    def __init__(self,camera_sn):
         '''
         camera id is 0,1,2,..., the maximum is the number of point-grey camera
         connected to the computer
         '''
-        self.camera_id=camera_id
+        self.camera_sn=camera_sn
         self.open()
 
 
@@ -35,7 +35,7 @@ class CameraDev(object):
             self.cam_list = self.system.GetCameras()
             
             #get the camera by id
-            self.cam = self.cam_list.GetByIndex(self.camera_id)
+            self.cam = self.cam_list.GetBySerial(self.camera_sn)
             
             #read camera device information
             self.nodemap_tldevice = self.cam.GetTLDeviceNodeMap()
@@ -282,13 +282,23 @@ class CameraDev(object):
             del self.buffer
             del self.output_buffer
             del self.record_buffer
-
-            del self.cam
-            if not self.system.isInUse():
+            num_cam = self.cam_list.GetSize()
+            num_init = 0
+            for i in range(num_cam):
+                if self.cam_list.GetByIndex(i).IsInitialized():
+                    num_init += 1
+            
+            if num_init > 0 :
+                print('Camera system still in use, removing camera %s' % self.camera_sn)
+                del self.cam
+            else:
+                print('Camera system not in use, removing camera %s and shutting down system' % self.camera_sn)
+                del self.cam
                 self.cam_list.Clear()
                 self.system.ReleaseInstance()
                 del self.cam_list
                 del self.system
+            
             
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
@@ -465,6 +475,9 @@ class CameraDev(object):
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             
+
+    
+    
 if __name__ == '__main__':
     print('begin test')
     camera = CameraDev(1)
@@ -474,7 +487,10 @@ if __name__ == '__main__':
     print(camera.get_video_mode())
     print(camera.get_frame_rate())
     
+
+    camera.config_event(camera.repeat)
     camera.start()
+    
 #     #camera.get_auto_framerate()
 #     camera2 = CameraDev(0)
 #     print(camera.get_model())
@@ -495,19 +511,14 @@ if __name__ == '__main__':
 #     end_t = time.time()
 #     print(end_t-start_t)
 #     camera
-#     while(True):
-#     # Display the resulting frame
-#         i +=1
-#          
-#         
-#         image[:] = camera.read()
-#         image2[:] = camera2.read()
-#         cv2.imshow('frame',image)
-#         cv2.imshow('frame2',image2)
-#         
-#         
-#         if cv2.waitKey(1) & 0xFF == ord('q'):
-#             break
+    while(True):
+    # Display the resulting frame
+        time.sleep(0.2)
+        print('running')
+         
+         
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 #      
 #     # When everything done, release the capture
 #     cv2.destroyAllWindows()
@@ -516,5 +527,6 @@ if __name__ == '__main__':
 #      
 #     camera2.stop()
 #     camera2.close()
+    camera.remove_event()
     camera.stop()
     camera.close()

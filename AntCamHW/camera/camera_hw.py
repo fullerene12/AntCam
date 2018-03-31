@@ -14,8 +14,8 @@ class CameraHW(HardwareComponent):
     
     name='camera'
 
-    def setup(self,camera_id = 0):
-        self.settings.New(name='camera_id',dtype=int,initial=camera_id,ro=True)
+    def setup(self,camera_sn = ''):
+        self.settings.New(name='camera_sn',dtype=str,initial=camera_sn,ro=True)
         self.settings.New(name ='model', dtype = str, initial ='N/A',ro = True)
         self.settings.New(name = 'width', dtype = int, initial = 1920, ro = True)
         self.settings.New(name = 'height', dtype = int, initial = 1200, ro = True)
@@ -28,7 +28,7 @@ class CameraHW(HardwareComponent):
                 
     def connect(self):
         #connect to the camera device
-        self._dev=CameraDev(self.settings.camera_id.value())
+        self._dev=CameraDev(self.settings.camera_sn.value())
         
         #define read functions
         self.settings.model.hardware_read_func = self._dev.get_model
@@ -60,7 +60,7 @@ class CameraHW(HardwareComponent):
         return self._dev.read()
     
     def read_output_data(self):
-        return self._dev.get_disp_buffer_data()
+        return self._dev.get_output_buffer_data()
     
     def write(self):
         self._dev.write()

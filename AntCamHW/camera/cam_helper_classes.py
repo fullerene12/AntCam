@@ -47,7 +47,7 @@ class ImageEventHandler(PySpin.ImageEvent):
         """
         # update all buffers in the camera
         self.cam.buffer = image
-        self.cam.update_disp_buffer()
+        self.cam.update_output_buffer()
         self.cam.update_record_buffer()
         
         #run user_defined functions

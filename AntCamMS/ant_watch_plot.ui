@@ -20,7 +20,7 @@
    <string notr="true"/>
   </property>
   <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,0,0">
-   <item row="0" column="2">
+   <item row="0" column="3">
     <widget class="QGroupBox" name="track_cam_groupBox">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -55,7 +55,7 @@
      <layout class="QVBoxLayout" name="verticalLayout_2"/>
     </widget>
    </item>
-   <item row="1" column="1" rowspan="2" colspan="2">
+   <item row="1" column="1" rowspan="2" colspan="3">
     <widget class="QGroupBox" name="wide_cam_groupBox">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -145,6 +145,41 @@
        </widget>
       </item>
      </layout>
+    </widget>
+   </item>
+   <item row="0" column="2">
+    <widget class="QGroupBox" name="track_cam_groupBox_2">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>150</width>
+       <height>150</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>150</width>
+       <height>150</height>
+      </size>
+     </property>
+     <property name="baseSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="styleSheet">
+      <string notr="true"/>
+     </property>
+     <property name="title">
+      <string>tracker</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_4"/>
     </widget>
    </item>
   </layout>
