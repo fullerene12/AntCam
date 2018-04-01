@@ -16,10 +16,7 @@ from qtpy import QtCore
 from qtpy.QtCore import QObject
 import os
 import queue
-
-def rebin(a, shape):
-    sh = shape[0],a.shape[0]//shape[0],shape[1],a.shape[1]//shape[1]
-    return a.reshape(sh).mean(-1).mean(1)
+from .helper_funcs import find_centroid
 
 class SubMeasurementQThread(MeasurementQThread):
 
@@ -94,10 +91,6 @@ class AntWatchMeasure(Measurement):
         self.wide_cam.settings.frame_rate.update_value(30)
         self.track_cam.read_from_hardware()
         self.wide_cam.read_from_hardware()
-        
-        self.track_output_queue = queue.Queue(1000)
-        self.track_disp_queue = queue.Queue(1000)
-        self.wide_disp_queue = queue.Queue(1000)
 
     def setup_figure(self):
         """
@@ -206,10 +199,12 @@ class AntWatchMeasure(Measurement):
             self.rec_thread = SubMeasurementQThread(self.record_frame)
             self.interrupt_subthread.connect(self.rec_thread.interrupt)
             
-        
+        self.track_output_queue = queue.Queue(1000)
+        self.track_disp_queue = queue.Queue(1000)
+        self.wide_disp_queue = queue.Queue(1000)
         
         try:
-            
+            threshold = 100
             i = 0
             self.track_cam.config_event(self.track_repeat)
             self.wide_cam.config_event(self.wide_repeat)
@@ -222,14 +217,24 @@ class AntWatchMeasure(Measurement):
                     # wait between readings.
                     # We will use our sampling_period settings to define time
                 comp_buffer = self.track_output_queue.get()
+                
+                
                 if type(comp_buffer) == np.ndarray:
                     height = self.track_cam.settings.height.value()
                     width = self.track_cam.settings.width.value()
+                    
                     if comp_buffer.shape == (height,width):
-                        binning = 8
-                        binned_height = height / binning
-                        binned_width = width /binning
-                        binned_buffer = rebin(comp_buffer,(binned_height,binned_width))
+                        i += 1
+                        time1 = time.clock()
+                        try:
+                            cms = find_centroid(image = comp_buffer, threshold = 100, binning = 16)
+                        except Exception as ex:
+                            print('Error: %s' % ex)
+                            cms = (512,512)
+                        time2 = time.clock()
+                        
+                        if i%60 == 0:
+                            print((time2 - time1) * 1000, cms)
 
             
                 if self.interrupt_measurement_called:

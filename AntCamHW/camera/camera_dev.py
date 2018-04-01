@@ -116,20 +116,28 @@ class CameraDev(object):
     def update_output_buffer(self):
         try:
             if not self.output_buffer.IsInUse():
-                self.output_buffer.DeepCopy(self.buffer)
+                self.output_buffer = PySpin.Image.Create(self.buffer)
+            else:
+                print('buffer is in use')
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             
     def update_record_buffer(self):
         try:
             if not self.record_buffer.IsInUse():
-                self.record_buffer.DeepCopy(self.buffer)
+                self.record_buffer = PySpin.Image.Create(self.buffer)
+            else:
+                print('buffer is in use')
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             
     def update_aux_buffer(self):
-        self.update_output_buffer()
-        self.update_record_buffer()
+        if self.buffer.IsIncomplete():
+            print('Image is incomplete')
+            pass
+        else:
+            self.update_output_buffer()
+            self.update_record_buffer()
         
     def get_buffer_data(self):
         '''
