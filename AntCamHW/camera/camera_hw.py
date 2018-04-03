@@ -59,11 +59,14 @@ class CameraHW(HardwareComponent):
     def read(self):
         return self._dev.read()
     
-    def read_output_data(self):
-        return self._dev.get_output_buffer_data()
+    def empty(self):
+        return self._dev.empty()
     
     def write(self):
         self._dev.write()
+        
+    def to_numpy(self,image):
+        return self._dev.to_numpy(image)
         
     def config_event(self,run_func):
         self._dev.config_event(run_func)

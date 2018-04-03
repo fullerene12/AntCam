@@ -32,7 +32,6 @@ class ImageEventHandler(PySpin.ImageEvent):
         self.run_func = run_func
         
         # Initialize image counter to 0
-        self._image_count = 0
 
     def OnImageEvent(self, image):
         """
@@ -46,22 +45,31 @@ class ImageEventHandler(PySpin.ImageEvent):
         :rtype: None
         """
         # update all buffers in the camera
-        self.cam.buffer = image
-        self.cam.update_output_buffer()
-        self.cam.update_record_buffer()
+        status = image.GetImageStatus()
+
+        if status == 0:
+            image_converted = PySpin.Image.Create(image)
+            
+            
+            
+            if self.cam.recording:
+                image_recorded = PySpin.Image.Create(image)
+                self.cam.write_record_frame(image_recorded)
+            
+            try:
+                self.cam.write(image_converted)
+            except Exception as ex:
+                print('In callback, Error as %s' % ex)
+            
+            image.Release()
+
+            del image
+        else:
+            print('status is %i' % status)
+        
         
         #run user_defined functions
         self.run_func()
-        self._image_count += 1
-        
-    def get_image_count(self):
-        """
-        Getter for image count.
-
-        :return: Number of images saved.
-        :rtype: int
-        """
-        return self._image_count
         
 if __name__ == '__main__':
     pass

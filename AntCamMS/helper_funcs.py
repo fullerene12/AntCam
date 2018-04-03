@@ -29,7 +29,7 @@ def find_centroid(image, threshold = 100, low_pass = True, binning = 8):
             imageb = rebin(image,(hb,wb))
         except Exception as ex:
             print('Error: %s' % ex)
-            return (h/2,w/2)
+            return (h/(binning*2),w/(binning*2))
                 
         
         if low_pass:
@@ -38,16 +38,19 @@ def find_centroid(image, threshold = 100, low_pass = True, binning = 8):
             imagef = imageb > threshold
         
         if imagef.max()>0:
-            cmsb = ndimage.center_of_mass(imagef)
-            cms = ((cmsb[0])*binning, (cmsb[1])*binning)
-            return cms
+            try:
+                cms = ndimage.center_of_mass(imagef)
+                return cms
+            except Exception as ex:
+                print('Error: %s' % ex)
+                return (h/(binning*2),w/(binning*2))
         else:
-            print('Could not identify any feature with the threshold settings, returning (h/2,w/2)')
-            return (h/2,w/2)
+            #print('Could not identify any feature with the threshold settings, returning (h/2,w/2)')
+            return (h/(binning*2),w/(binning*2))
         
     else:
         print('Height or width is not divisible by binning, returning (h/2,w/2)')
-        return (h/2,w/2)
+        return (h/(binning*2),w/(binning*2))
     
 
 

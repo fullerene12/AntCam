@@ -8,6 +8,7 @@ import numpy as np
 import cv2
 import PySpin
 import time
+from queue import Queue
 from .cam_helper_classes import ImageEventHandler
 '''
 Camera Dev is the FoundryScope Driver for Point-Grey cameras. It is calling the 
@@ -15,6 +16,8 @@ FLIR Spinnaker Python binding PySpin. The newest version of PySpin can be
 obtained from the FLIR official website
 '''
 class CameraDev(object):
+    data_qsize = 1000
+    recording = False
     
     def __init__(self,camera_sn):
         '''
@@ -23,8 +26,12 @@ class CameraDev(object):
         '''
         self.camera_sn=camera_sn
         self.open()
-
-
+        self.data_q = Queue(self.data_qsize)
+        self.record_q = Queue(self.data_qsize)
+        
+    '''
+    Camera operations
+    '''
     def open(self):
         '''
         open up the connection to the camera
@@ -54,18 +61,9 @@ class CameraDev(object):
             #get height and width of the field of view
             self.height = self.get_height()
             self.width = self.get_width()
-             
-            #load first frame of image for the first image buffer
-            self.start()
-            self.buffer = self.cam.GetNextImage()
-            self.buffer.Release()
-            self.output_buffer = PySpin.Image.Create(self.buffer)
-            self.record_buffer = PySpin.Image.Create(self.buffer)
-            self.stop()
             
-            
-#         
-            
+            #setup record buffer
+                   
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             return None
@@ -99,164 +97,7 @@ class CameraDev(object):
             
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
-        
-    def update_buffer(self):
-        '''
-        read to the image buffer
-        '''
-        try:
-            self.buffer = self.cam.GetNextImage()
-            self.update_aux_buffer()
-            self.buffer.Release()
-            #return image_converted
             
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-            
-    def update_output_buffer(self):
-        try:
-            if not self.output_buffer.IsInUse():
-                self.output_buffer = PySpin.Image.Create(self.buffer)
-            else:
-                print('buffer is in use')
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-            
-    def update_record_buffer(self):
-        try:
-            if not self.record_buffer.IsInUse():
-                self.record_buffer = PySpin.Image.Create(self.buffer)
-            else:
-                print('buffer is in use')
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-            
-    def update_aux_buffer(self):
-        if self.buffer.IsIncomplete():
-            print('Image is incomplete')
-            pass
-        else:
-            self.update_output_buffer()
-            self.update_record_buffer()
-        
-    def get_buffer_data(self):
-        '''
-        read the numpy buffer
-        '''
-        try:
-            return self.to_numpy(self.buffer)
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-        except ValueError as ex:
-            print("Error: %s" % ex)
-            
-    def get_output_buffer_data(self):
-        try:
-            return self.to_numpy(self.output_buffer)
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-        except ValueError as ex:
-            print("Error: %s" % ex)
-            
-    def get_record_buffer_data(self):
-        try:
-            return self.to_numpy(self.record_buffer)
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-        except ValueError as ex:
-            print("Error: %s" % ex)
-            
-    def get_buffer(self):
-        '''
-        read the numpy buffer
-        '''
-        try:
-            if not self.self.buffer.IsInUse():
-                return PySpin.Image.Create(self.buffer)
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-        except ValueError as ex:
-            print("Error: %s" % ex)
-            
-    def get_output_buffer(self):
-        try:
-            if not self.output_buffer.IsInUse():
-                return PySpin.Image.Create(self.output_buffer)
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-        except ValueError as ex:
-            print("Error: %s" % ex)
-            
-    def get_record_buffer(self):
-        try:
-            if not self.record_buffer.IsInUse():
-                return PySpin.Image.Create(self.record_buffer)
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-        except ValueError as ex:
-            print("Error: %s" % ex)
-            
-    def to_numpy(self,image):
-        try:
-            if not image.IsInUse():
-                temp_buffer = PySpin.Image.Create(image)
-            else:
-                print('in use')
-                return np.ones((self.height,self.width),dtype = np.uint8)
-            if temp_buffer.IsIncomplete():
-                print('in complete')
-                return np.ones((self.height,self.width),dtype = np.uint8)
-            data = temp_buffer.GetData()
-            del temp_buffer
-            if not type(data) == bytes:
-                if data.size == self.height * self.width:
-                    data = data.reshape((self.height,self.width))
-                    #data = np.fliplr(data)
-                    #data = np.flipud(data)
-                    return data
-                else:
-                    print(type(data))
-                    raise TypeError('Data is not the right size, ignore this trial')
-            else:
-                raise TypeError('Data is bytes')
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-        except Exception as ex:
-            print("Error: %s" % ex)
-            
-        return np.ones((self.height,self.width),dtype = np.uint8)
-    
-    def to_numpy2(self,image):
-        try:
-            temp_buffer = PySpin.Image.Create(image)
-            if temp_buffer.IsIncomplete():
-                print('in complete')
-                return np.ones((self.height,self.width),dtype = np.uint8)
-            data = temp_buffer.GetData()
-            del temp_buffer
-            if not type(data) == bytes:
-                if data.size == self.height * self.width:
-                    data = data.reshape((self.height,self.width))
-                    #data = np.fliplr(data)
-                    #data = np.flipud(data)
-                    return data
-                else:
-                    print(type(data))
-                    raise TypeError('Data is not the right size, ignore this trial')
-            else:
-                raise TypeError('Data is bytes')
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-        except Exception as ex:
-            print("Error: %s" % ex)
-            
-        return np.ones((self.height,self.width),dtype = np.uint8)
-                
-            
-    def read(self):
-        self.update_buffer()
-        return self.get_buffer_data()
-    
     def config_event(self, run_func):
         try:
             self.event = ImageEventHandler(self, run_func)
@@ -277,6 +118,7 @@ class CameraDev(object):
         '''
         try:
             self.cam.EndAcquisition()
+            self.data_q = Queue(self.data_qsize)
         except PySpin.SpinnakerException as ex:
                 print("Error: %s" % ex)
         
@@ -306,10 +148,72 @@ class CameraDev(object):
                 self.system.ReleaseInstance()
                 del self.cam_list
                 del self.system
-            
-            
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
+
+    '''
+    Data operations
+    '''
+    def to_numpy(self,image):
+        try:
+            data = self.get_data(image)
+            if type(data) == np.ndarray:
+                new_data = np.copy(data)
+                if new_data.size == self.height * self.width:
+                    output_data = new_data.reshape((self.height,self.width))
+                    return output_data
+                else:
+                    print('Error: Data size %i is not the right size, returning ones' % new_data.size)
+                    return np.ones((self.height,self.width),dtype = np.uint8)
+            else:
+                print('Error: data is %s, returning ones' % type(data))
+                return np.ones((self.height,self.width),dtype = np.uint8)
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s, returning ones" % ex)
+            return np.ones((self.height,self.width),dtype = np.uint8)
+        except Exception as ex:
+            print("Error: %s, returning ones" % ex)
+            return np.ones((self.height,self.width),dtype = np.uint8)
+        
+    
+    def get_data(self,image):
+        try:
+            data = image.GetData()
+            if type(data) == np.ndarray:
+                return np.copy(data)
+            else:
+                return np.ones((self.height,self.width),dtype = np.uint8)
+        except Exception as ex:
+            print('Error: %s' % ex)
+            return np.ones((self.height,self.width),dtype = np.uint8)
+    
+    def save_image(self,image):
+        image.Save('buffer')
+            
+    def empty(self):
+        return self.data_q.empty()
+            
+    def read(self):
+        return self.data_q.get()
+    
+    def write(self,data):
+        self.data_q.put(data)
+        
+    def record_empty(self):
+        return self.record_q.empty()
+    
+    def read_record_frame(self):
+        return self.record_q.get()
+    
+    def write_record_frame(self,image):
+        try:
+            self.record_q.put(PySpin.Image.Create(image))
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)
+            
+    '''
+    Setting Functions
+    '''
         
     def get_model(self):
         """

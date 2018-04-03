@@ -33,6 +33,7 @@
 # programming with callbacks and events, and SaveToAvi exhibits video creation.
 
 import PySpin
+import time
 
 NUM_IMAGES = 10  # number of images to grab
 
@@ -187,7 +188,11 @@ def acquire_images(cam, nodemap, nodemap_tldevice):
                     #  The standard practice of the examples is to use device
                     #  serial numbers to keep images of one device from
                     #  overwriting those of another.
+                    time1 = time.time()
                     image_converted.Save(filename)
+                    time2 = time.time()
+                    print((time2-time1)*1000)
+                    
                     print("Image saved at %s" % filename)
 
                     #  Release image
@@ -278,7 +283,7 @@ def run_single_camera(cam):
         nodemap = cam.GetNodeMap()
 
         # Acquire images
-        #result &= acquire_images(cam, nodemap, nodemap_tldevice)
+        result &= acquire_images(cam, nodemap, nodemap_tldevice)
 
         # Deinitialize camera
         cam.DeInit()
