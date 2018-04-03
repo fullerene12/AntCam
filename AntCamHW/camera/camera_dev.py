@@ -46,12 +46,13 @@ class CameraDev(object):
             
             #read camera device information
             self.nodemap_tldevice = self.cam.GetTLDeviceNodeMap()
-            
+            self.nodemap_tlstream = self.cam.GetTLStreamNodeMap()
             #initialize camera
             self.cam.Init()
             
             #read camera control information
             self.nodemap = self.cam.GetNodeMap()
+        
             
             #enable auto exposure
             self.set_auto_exposure(False)
@@ -129,9 +130,6 @@ class CameraDev(object):
         try:
             #release the devices properly
             self.cam.DeInit()
-            del self.buffer
-            del self.output_buffer
-            del self.record_buffer
             num_cam = self.cam_list.GetSize()
             num_init = 0
             for i in range(num_cam):
@@ -155,6 +153,10 @@ class CameraDev(object):
     Data operations
     '''
     def to_numpy(self,image):
+        buffer_size = image.GetBufferSize()
+        if buffer_size == 0:
+            print('corrupted image %i' % buffer_size)
+            return np.ones((self.height,self.width),dtype = np.uint8)
         try:
             data = self.get_data(image)
             if type(data) == np.ndarray:
@@ -163,9 +165,11 @@ class CameraDev(object):
                     output_data = new_data.reshape((self.height,self.width))
                     return output_data
                 else:
+                    print(status)
                     print('Error: Data size %i is not the right size, returning ones' % new_data.size)
                     return np.ones((self.height,self.width),dtype = np.uint8)
             else:
+                print(status)
                 print('Error: data is %s, returning ones' % type(data))
                 return np.ones((self.height,self.width),dtype = np.uint8)
         except PySpin.SpinnakerException as ex:
@@ -177,6 +181,10 @@ class CameraDev(object):
         
     
     def get_data(self,image):
+        status = image.GetImageStatus()
+        if not status == 0:
+            print('corrupted image %i' % status)
+            return np.ones((self.height,self.width),dtype = np.uint8)
         try:
             data = image.GetData()
             if type(data) == np.ndarray:
@@ -386,22 +394,91 @@ class CameraDev(object):
             node_video_mode.SetIntValue(mode_list[mode_number].GetValue())
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
-            
+    
+    '''
+    Streaming information
+    '''
+    def get_feature(self,nodemap,node_name,feature_name):
+        try:
+            node = PySpin.CCategoryPtr(nodemap.GetNode(node_name))
+            if PySpin.IsAvailable(node) and PySpin.IsReadable(node):
+                features = node.GetFeatures()
+                for feature in features:
+                    node_feature = PySpin.CValuePtr(feature)
+                    if node_feature.GetName() == feature_name:
+                        return node_feature.ToString()
+            else:
+                print('No feature named %s found' % feature_name)
+                return None
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)         
 
+    def set_feature(self,nodemap,node_name,feature_name,value):
+        try:
+            node = PySpin.CCategoryPtr(nodemap.GetNode(node_name))
+            if PySpin.IsAvailable(node) and PySpin.IsReadable(node):
+                features = node.GetFeatures()
+                for feature in features:
+                    node_feature = PySpin.CValuePtr(feature)
+                    if node_feature.GetName() == feature_name:
+                            node_feature.FromString(value)
+                            
+            else:
+                print('No feature named %s found' % feature_name)
+                return None
+        except PySpin.SpinnakerException as ex:
+            print("Error: %s" % ex)            
+            
+    def get_buffer_count(self):
+        """
+        This function get the buffer count of the stream
+        """
+        return int(self.get_feature(self.nodemap_tlstream,
+                                    'BufferHandlingControl',
+                                    'StreamDefaultBufferCount'))
     
+    def set_buffer_count(self,value):
+        """
+        This function set the buffer count of the stream
+        """
+        return self.set_feature(self.nodemap_tlstream,
+                                'BufferHandlingControl',
+                                'StreamDefaultBufferCount',
+                                str(value))
     
+    def get_crc(self):
+        return int(self.get_feature(self.nodemap_tlstream,
+                                    'BufferHandlingControl',
+                                    'StreamCRCCheckEnable'))
+        
+    def set_crc(self,value):
+        """
+        This function set the buffer count of the stream
+        """
+        return self.set_feature(self.nodemap_tlstream,
+                                'BufferHandlingControl',
+                                'StreamCRCCheckEnable',
+                                str(value))
+    
+            
 if __name__ == '__main__':
     print('begin test')
-    camera = CameraDev(1)
+    camera = CameraDev('16130612')
+    print(camera.get_buffer_count())
+    camera.set_buffer_count(20)
+    print(camera.get_buffer_count())
+    print(camera.get_crc())
+    camera.set_crc(1)
+    print(camera.get_crc())
     
-    print(camera.get_video_mode())
-    camera.set_video_mode(2)
-    print(camera.get_video_mode())
-    print(camera.get_frame_rate())
+#     print(camera.get_video_mode())
+#     camera.set_video_mode(1)
+#     print(camera.get_video_mode())
+#     print(camera.get_frame_rate())
     
 
-    camera.config_event(camera.repeat)
-    camera.start()
+#     camera.config_event(camera.repeat)
+#     camera.start()
     
 #     #camera.get_auto_framerate()
 #     camera2 = CameraDev(0)
@@ -423,14 +500,14 @@ if __name__ == '__main__':
 #     end_t = time.time()
 #     print(end_t-start_t)
 #     camera
-    while(True):
-    # Display the resulting frame
-        time.sleep(0.2)
-        print('running')
-         
-         
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+#     while(True):
+#     # Display the resulting frame
+#         time.sleep(0.2)
+#         print('running')
+#          
+#          
+#         if cv2.waitKey(1) & 0xFF == ord('q'):
+#             break
 #      
 #     # When everything done, release the capture
 #     cv2.destroyAllWindows()
@@ -439,6 +516,6 @@ if __name__ == '__main__':
 #      
 #     camera2.stop()
 #     camera2.close()
-    camera.remove_event()
-    camera.stop()
+#     camera.remove_event()
+#     camera.stop()
     camera.close()

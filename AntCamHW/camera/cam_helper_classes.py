@@ -45,9 +45,11 @@ class ImageEventHandler(PySpin.ImageEvent):
         :rtype: None
         """
         # update all buffers in the camera
-        status = image.GetImageStatus()
+        status = True
+        #status = True
+        #print(status)
 
-        if status == 0:
+        if status:
             image_converted = PySpin.Image.Create(image)
             
             

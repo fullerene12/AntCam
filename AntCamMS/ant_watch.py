@@ -69,7 +69,7 @@ class AntWatchMeasure(Measurement):
         self.settings.New('y',dtype = float, initial = 32, ro = True, vmin = 0, vmax = 63.5)
         
         # Define how often to update display during a run
-        self.display_update_period = 0.01
+        self.display_update_period = 0.005
         
         # Convenient reference to the hardware used in the measurement
         self.track_cam = self.app.hardware['track_cam']
@@ -186,6 +186,9 @@ class AntWatchMeasure(Measurement):
         
         # We use a try/finally block, so that if anything goes wrong during a measurement,
         # the finally block can clean things up, e.g. close the data file object.
+        self.track_cam._dev.set_buffer_count(500)
+        self.wide_cam._dev.set_buffer_count(500)
+        print(self.track_cam._dev.get_buffer_count())
         if self.settings.save_video.value():
             self.track_cam._dev.recording = True
             self.wide_cam._dev.recording = True
