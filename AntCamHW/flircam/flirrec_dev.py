@@ -61,7 +61,7 @@ class Recorder(object):
     def close(self):
         self.rec.AVIClose()
     
-class RecorderDev(object):
+class FLIRRecDev(object):
     '''
     Virtual Device that hold a list of running recorders
     '''

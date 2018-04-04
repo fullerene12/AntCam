@@ -7,11 +7,11 @@ Created on Mar 26, 2018
 import numpy as np
 import PySpin
 '''
-Camera Dev is the FoundryScope Driver for Point-Grey cameras. It is calling the 
+FLIRCamDev is the FoundryScope Driver for Point-Grey cameras. It is calling the 
 FLIR Spinnaker Python binding PySpin. The newest version of PySpin can be
 obtained from the FLIR official website
 '''
-class CameraDev(object):
+class FLIRCamDev(object):
     
     def __init__(self,camera_sn):
         '''
@@ -285,7 +285,7 @@ class CameraDev(object):
         '''
         set frame rate in fps
         
-        set frame rate in fps
+        fr: framerate in fps
         '''
         try:
             return self.cam.AcquisitionFrameRate.SetValue(fr)
@@ -427,63 +427,3 @@ class CameraDev(object):
                                 'BufferHandlingControl',
                                 'StreamDefaultBufferCount',
                                 str(value))
-    
-            
-if __name__ == '__main__':
-    print('begin test')
-    camera = CameraDev('16130612')
-    print(camera.get_buffer_count())
-    camera.set_buffer_count(20)
-    print(camera.get_buffer_count())
-    print(camera.get_crc())
-    camera.set_crc(1)
-    print(camera.get_crc())
-    
-#     print(camera.get_video_mode())
-#     camera.set_video_mode(1)
-#     print(camera.get_video_mode())
-#     print(camera.get_frame_rate())
-    
-
-#     camera.config_event(camera.repeat)
-#     camera.start()
-    
-#     #camera.get_auto_framerate()
-#     camera2 = CameraDev(0)
-#     print(camera.get_model())
-#     print('connecting camera')
-#     print('starting camera')
-#     camera.start()
-#     camera2.start()
-#     print('read frame')
-#     tot_time = 0
-#     i = 0
-#     image = np.zeros((2048,2048),dtype=np.uint8)
-#     image2 = np.zeros((1200,1920),dtype=np.uint8)
-#     start_t = time.time()
-#     
-#     for j in range(100):
-#         camera.update_buffer()
-#         camera.update_output_buffer()
-#     end_t = time.time()
-#     print(end_t-start_t)
-#     camera
-#     while(True):
-#     # Display the resulting frame
-#         time.sleep(0.2)
-#         print('running')
-#          
-#          
-#         if cv2.waitKey(1) & 0xFF == ord('q'):
-#             break
-#      
-#     # When everything done, release the capture
-#     cv2.destroyAllWindows()
-#        
-#     print('stop acquisition')
-#      
-#     camera2.stop()
-#     camera2.close()
-#     camera.remove_event()
-#     camera.stop()
-    camera.close()

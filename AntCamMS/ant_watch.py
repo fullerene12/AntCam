@@ -82,7 +82,7 @@ class AntWatchMeasure(Measurement):
         # Convenient reference to the hardware used in the measurement
         self.track_cam = self.app.hardware['track_cam']
         self.wide_cam = self.app.hardware['wide_cam']
-        self.recorder = self.app.hardware['recorder']
+        self.recorder = self.app.hardware['flirrec']
         
         #setup experiment condition
         self.track_cam.settings.frame_rate.update_value(15)

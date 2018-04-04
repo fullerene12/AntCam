@@ -19,20 +19,19 @@ class AntCamApp(BaseMicroscopeApp):
         
         #Add hardware components
         print("Adding Hardware Components")
-        from AntCamHW.camera.camera_hw import CameraHW
-        track_cam = CameraHW(self)
+        from AntCamHW.flircam.flircam_hw import FLIRCamHW
+        track_cam = FLIRCamHW(self)
         track_cam.settings.camera_sn.update_value('16130612')
         track_cam.name = 'track_cam'
-        wide_cam = CameraHW(self)
+        wide_cam = FLIRCamHW(self)
         wide_cam.settings.camera_sn.update_value('15188107')
         wide_cam.name = 'wide_cam'
         self.add_hardware(track_cam)
         self.add_hardware(wide_cam)
         
-        from AntCamHW.camera.recorder_hw import RecorderHW
-        self.add_hardware(RecorderHW(self))
+        from AntCamHW.flircam.flirrec_hw import FLIRRecHW
+        self.add_hardware(FLIRRecHW(self))
         
-        from AntCamHW.daq_timer.daq_timer_hw import DAQTimerHW
         #self.add_hardware(DAQTimerHW(self))
 
         #Add measurement components
@@ -55,7 +54,7 @@ if __name__ == '__main__':
     
     app.hardware['track_cam'].connected.update_value(True)
     app.hardware['wide_cam'].connected.update_value(True)
-    app.hardware['recorder'].connected.update_value(True)
+    app.hardware['flirrec'].connected.update_value(True)
     #app.hardware['daq_timer'].connected.update_value(True)
     
     sys.exit(app.exec_())

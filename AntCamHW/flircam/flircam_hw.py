@@ -5,14 +5,14 @@ Created on Aug 9, 2017
 '''
 
 from ScopeFoundry import HardwareComponent
-from AntCamHW.camera.camera_dev import CameraDev
+from .flircam_dev import FLIRCamDev
 
-class CameraHW(HardwareComponent):
+class FLIRCamHW(HardwareComponent):
     '''
     Hardware Component Class for receiving AI input for breathing, licking etc
     '''
     
-    name='camera'
+    name='flircam'
 
     def setup(self,camera_sn = ''):
         self.settings.New(name='camera_sn',dtype=str,initial=camera_sn,ro=True)
@@ -28,7 +28,7 @@ class CameraHW(HardwareComponent):
                 
     def connect(self):
         #connect to the camera device
-        self._dev=CameraDev(self.settings.camera_sn.value())
+        self._dev=FLIRCamDev(self.settings.camera_sn.value())
         
         #define read functions
         self.settings.model.hardware_read_func = self._dev.get_model
