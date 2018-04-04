@@ -26,8 +26,7 @@ class CameraDev(object):
         '''
         self.camera_sn=camera_sn
         self.open()
-        self.data_q = Queue(self.data_qsize)
-        self.record_q = Queue(self.data_qsize)
+        
         
     '''
     Camera operations
@@ -63,7 +62,9 @@ class CameraDev(object):
             self.height = self.get_height()
             self.width = self.get_width()
             
-            #setup record buffer
+            #setup buffer queue
+            self.data_q = Queue(self.data_qsize)
+            self.record_q = Queue(self.data_qsize)
                    
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
@@ -99,9 +100,9 @@ class CameraDev(object):
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             
-    def config_event(self, run_func):
+    def config_event(self):
         try:
-            self.event = ImageEventHandler(self, run_func)
+            self.event = ImageEventHandler(self)
             self.cam.RegisterEvent(self.event)
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
@@ -130,6 +131,8 @@ class CameraDev(object):
         try:
             #release the devices properly
             self.cam.DeInit()
+            del self.data_q
+            del self.record_q
             num_cam = self.cam_list.GetSize()
             num_init = 0
             for i in range(num_cam):
@@ -153,6 +156,10 @@ class CameraDev(object):
     Data operations
     '''
     def to_numpy(self,image):
+        status = image.GetImageStatus()
+        if not status == 0:
+            print('corrupted image %i' % status)
+            return np.ones((self.height,self.width),dtype = np.uint8)
         buffer_size = image.GetBufferSize()
         if buffer_size == 0:
             print('corrupted image %i' % buffer_size)

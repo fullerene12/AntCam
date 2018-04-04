@@ -18,7 +18,7 @@ class ImageEventHandler(PySpin.ImageEvent):
     is particular to the example.
     """
 
-    def __init__(self, cam, run_func):
+    def __init__(self, cam):
         """
         Constructor. Retrieves serial number of given camera and sets image counter to 0.
 
@@ -29,7 +29,6 @@ class ImageEventHandler(PySpin.ImageEvent):
         super(ImageEventHandler, self).__init__()
         
         self.cam = cam
-        self.run_func = run_func
         
         # Initialize image counter to 0
 
@@ -50,9 +49,8 @@ class ImageEventHandler(PySpin.ImageEvent):
         #print(status)
 
         if status:
-            image_converted = PySpin.Image.Create(image)
-            
-            
+            #image_converted = PySpin.Image.Create(image)
+            image_converted = image.Convert(PySpin.PixelFormat_Mono8)
             
             if self.cam.recording:
                 image_recorded = PySpin.Image.Create(image)
@@ -68,10 +66,6 @@ class ImageEventHandler(PySpin.ImageEvent):
             del image
         else:
             print('status is %i' % status)
-        
-        
-        #run user_defined functions
-        self.run_func()
         
 if __name__ == '__main__':
     pass

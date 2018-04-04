@@ -1,0 +1,57 @@
+Adding Hardware Components
+Create Measurement objects
+Fatal Python error: GC object already tracked
+
+Thread 0x000028d4 (most recent call first):
+
+Thread 0x00000dfc (most recent call first):
+  File "C:\ProgramData\Anaconda3\lib\site-packages\PySpin\PySpin.py", line 47928 in GetData
+  File "C:\Users\AntMan\Documents\Hao\AntCam\AntCamHW\camera\camera_dev.py", line 196 in get_data
+  File "C:\Users\AntMan\Documents\Hao\AntCam\AntCamHW\camera\camera_dev.py", line 168 in to_numpy
+  File "C:\Users\AntMan\Documents\Hao\AntCam\AntCamHW\camera\camera_hw.py", line 69 in to_numpy
+  File "C:\Users\AntMan\Documents\Hao\AntCam\AntCamMS\ant_watch.py", line 328 in compute_location
+  File "C:\Users\AntMan\Documents\Hao\AntCam\AntCamMS\ant_watch.py", line 30 in run
+
+Current thread 0x0000214c (most recent call first):
+  File "C:\ProgramData\Anaconda3\lib\threading.py", line 347 in notify
+  File "C:\ProgramData\Anaconda3\lib\queue.py", line 175 in get
+  File "C:\Users\AntMan\Documents\Hao\AntCam\AntCamHW\camera\camera_dev.py", line 221 in read_record_frame
+  File "C:\Users\AntMan\Documents\Hao\AntCam\AntCamMS\ant_watch.py", line 319 in record_frame
+  File "C:\Users\AntMan\Documents\Hao\AntCam\AntCamMS\ant_watch.py", line 30 in run
+
+Thread 0x00002128 (most recent call first):
+  File "C:\Users\AntMan\Documents\Hao\AntCam\AntCamMS\ant_watch.py", line 247 in run
+  File "C:\ProgramData\Anaconda3\lib\site-packages\ScopeFoundry\measurement.py", line 164 in _thread_run
+  File "C:\ProgramData\Anaconda3\lib\site-packages\ScopeFoundry\measurement.py", line 23 in run
+
+Thread 0x00001bc4 (most recent call first):
+  File "C:\ProgramData\Anaconda3\lib\site-packages\zmq\utils\garbage.py", line 47 in run
+  File "C:\ProgramData\Anaconda3\lib\threading.py", line 916 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\lib\threading.py", line 884 in _bootstrap
+
+Thread 0x00002f74 (most recent call first):
+  File "C:\ProgramData\Anaconda3\lib\site-packages\zmq\sugar\poll.py", line 99 in poll
+  File "C:\ProgramData\Anaconda3\lib\site-packages\zmq\eventloop\ioloop.py", line 122 in poll
+  File "C:\ProgramData\Anaconda3\lib\site-packages\tornado\ioloop.py", line 863 in start
+  File "C:\ProgramData\Anaconda3\lib\site-packages\zmq\eventloop\ioloop.py", line 177 in start
+  File "C:\ProgramData\Anaconda3\lib\site-packages\ipykernel\iostream.py", line 78 in _thread_main
+  File "C:\ProgramData\Anaconda3\lib\threading.py", line 864 in run
+  File "C:\ProgramData\Anaconda3\lib\threading.py", line 916 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\lib\threading.py", line 884 in _bootstrap
+
+Thread 0x000023f8 (most recent call first):
+  File "C:\ProgramData\Anaconda3\lib\threading.py", line 295 in wait
+  File "C:\ProgramData\Anaconda3\lib\threading.py", line 551 in wait
+  File "C:\ProgramData\Anaconda3\lib\site-packages\IPython\core\history.py", line 829 in run
+  File "C:\ProgramData\Anaconda3\lib\site-packages\IPython\core\history.py", line 58 in needs_sqlite
+  File "<decorator-gen-24>", line 2 in run
+  File "C:\ProgramData\Anaconda3\lib\threading.py", line 916 in _bootstrap_inner
+  File "C:\ProgramData\Anaconda3\lib\threading.py", line 884 in _bootstrap
+
+Thread 0x000027b8 (most recent call first):
+  File "C:\ProgramData\Anaconda3\lib\site-packages\pyqtgraph\functions.py", line 1044 in makeARGB
+  File "C:\ProgramData\Anaconda3\lib\site-packages\pyqtgraph\graphicsItems\ImageItem.py", line 403 in render
+  File "C:\ProgramData\Anaconda3\lib\site-packages\pyqtgraph\graphicsItems\ImageItem.py", line 411 in paint
+  File "C:\ProgramData\Anaconda3\lib\site-packages\pyqtgraph\widgets\GraphicsView.py", line 154 in paintEvent
+  File "C:\ProgramData\Anaconda3\lib\site-packages\ScopeFoundry\base_app.py", line 96 in exec_
+  File "C:\Users\AntMan\Documents\Hao\AntCam\main_interface.py", line 62 in <module>

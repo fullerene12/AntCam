@@ -3,7 +3,6 @@ Created on Mar 26, 2018
 
 @author: Hao Wu
 '''
-
 from ScopeFoundry import BaseMicroscopeApp
 
 class AntCamApp(BaseMicroscopeApp):

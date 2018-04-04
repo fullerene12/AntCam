@@ -69,7 +69,8 @@ class AntWatchMeasure(Measurement):
         self.settings.New('y',dtype = float, initial = 32, ro = True, vmin = 0, vmax = 63.5)
         
         # Define how often to update display during a run
-        self.display_update_period = 0.005
+        self.display_update_period = 0.01
+        
         
         # Convenient reference to the hardware used in the measurement
         self.track_cam = self.app.hardware['track_cam']
@@ -77,8 +78,8 @@ class AntWatchMeasure(Measurement):
         self.recorder = self.app.hardware['recorder']
         
         #setup experiment condition
-        self.track_cam.settings.frame_rate.update_value(25)
-        self.wide_cam.settings.frame_rate.update_value(25)
+        self.track_cam.settings.frame_rate.update_value(15)
+        self.wide_cam.settings.frame_rate.update_value(15)
         self.track_cam.read_from_hardware()
         self.wide_cam.read_from_hardware()
 
@@ -88,7 +89,6 @@ class AntWatchMeasure(Measurement):
         This is the place to make all graphical interface initializations,
         build plots, etc.
         """
-        
         # connect ui widgets to measurement/hardware settings or functions
         self.ui.start_pushButton.clicked.connect(self.start)
         self.ui.interrupt_pushButton.clicked.connect(self.interrupt)
@@ -118,6 +118,8 @@ class AntWatchMeasure(Measurement):
         self.tracker_view.addItem(self.tracker_image)
         
         self.tracker_data = np.zeros((64,64),dtype = np.uint8)
+        self.wide_disp_counter = 0
+        self.track_disp_counter = 0
         
     def update_display(self):
         """
@@ -125,24 +127,24 @@ class AntWatchMeasure(Measurement):
         This function runs repeatedly and automatically during the measurement run.
         its update frequency is defined by self.display_update_period
         """
-        x = int(self.settings.x.value())
-        y = int(self.settings.y.value())
-        self.tracker_data[:] = 0
-        self.tracker_data[x,y] = 1
-        self.tracker_image.setImage(np.fliplr(np.copy(self.tracker_data).transpose()))
+        
         
         if self.wide_cam.empty():
             pass
         else:
             try:
                 wide_disp_data = self.wide_cam.read()
-                wide_disp_image = self.wide_cam.to_numpy(wide_disp_data)
-                if type(wide_disp_image) == np.ndarray:
-                    if wide_disp_image.shape == (self.wide_cam.settings.height.value(),self.wide_cam.settings.width.value()):
-                        try:
-                            self.wide_cam_image.setImage(np.copy(wide_disp_image))
-                        except Exception as ex:
-                            print('Error: %s' % ex)
+                
+                self.wide_disp_counter += 1
+                self.wide_disp_counter %= 2
+                if self.wide_disp_counter == 0:
+                    wide_disp_image = self.wide_cam.to_numpy(wide_disp_data)
+                    if type(wide_disp_image) == np.ndarray:
+                        if wide_disp_image.shape == (self.wide_cam.settings.height.value(),self.wide_cam.settings.width.value()):
+                            try:
+                                self.wide_cam_image.setImage(np.copy(wide_disp_image))
+                            except Exception as ex:
+                                print('Error: %s' % ex)
             except Exception as ex:
                 print("Error: %s" % ex)
                  
@@ -153,12 +155,21 @@ class AntWatchMeasure(Measurement):
         else:
             try:
                 track_disp_image = self.track_disp_queue.get()
-                if type(track_disp_image) == np.ndarray:
-                    if track_disp_image.shape == (self.track_cam.settings.height.value(),self.track_cam.settings.width.value()):
-                        try:
-                            self.track_cam_image.setImage(np.copy(track_disp_image))
-                        except Exception as ex:
-                            print('Error: %s' % ex)
+                self.track_disp_counter += 1
+                self.wide_disp_counter %= 2
+                if self.wide_disp_counter == 0:
+                    if type(track_disp_image) == np.ndarray:
+                        if track_disp_image.shape == (self.track_cam.settings.height.value(),self.track_cam.settings.width.value()):
+                            try:
+                                self.track_cam_image.setImage(np.copy(track_disp_image))
+                            except Exception as ex:
+                                print('Error: %s' % ex)
+                                
+                    x = int(self.settings.x.value())
+                    y = int(self.settings.y.value())
+                    self.tracker_data[:] = 0
+                    self.tracker_data[x,y] = 1
+                    self.tracker_image.setImage(np.fliplr(np.copy(self.tracker_data).transpose()))
             except Exception as ex:
                 print("Error: %s" % ex)
 
@@ -188,7 +199,7 @@ class AntWatchMeasure(Measurement):
         # the finally block can clean things up, e.g. close the data file object.
         self.track_cam._dev.set_buffer_count(500)
         self.wide_cam._dev.set_buffer_count(500)
-        print(self.track_cam._dev.get_buffer_count())
+
         if self.settings.save_video.value():
             self.track_cam._dev.recording = True
             self.wide_cam._dev.recording = True
@@ -219,8 +230,8 @@ class AntWatchMeasure(Measurement):
         try:
             threshold = 100
             self.i = 0
-            self.track_cam.config_event(self.track_repeat)
-            self.wide_cam.config_event(self.wide_repeat)
+            self.track_cam.config_event()
+            self.wide_cam.config_event()
             
             if self.settings.save_video.value():
                 self.rec_thread.start()
@@ -281,7 +292,8 @@ class AntWatchMeasure(Measurement):
             self.wide_cam.stop()
             self.track_cam.remove_event()
             self.wide_cam.remove_event()
-
+            self.track_cam._dev.set_buffer_count(10)
+            self.wide_cam._dev.set_buffer_count(10)
             if self.settings.save_video.value():
                 self.rec_thread.terminate()
                 del self.rec_thread
@@ -294,13 +306,6 @@ class AntWatchMeasure(Measurement):
             del self.track_disp_queue
             del self.wide_disp_queue
             del self.track_output_queue
-            
-            
-    def track_repeat(self):
-        pass
-            
-    def wide_repeat(self):
-        pass
           
     def record_frame(self):
         if self.settings.save_video.value():
@@ -318,7 +323,7 @@ class AntWatchMeasure(Measurement):
             self.track_disp_queue.put(np.fliplr(track_disp_image.transpose()))
             try:
                 self.i += 1
-                cms = find_centroid(image = track_comp_image, threshold = 100, binning = 16)
+                cms = find_centroid(image = track_comp_image, threshold = 120, binning = 8)
                 self.settings.x.update_value(cms[0])
                 self.settings.y.update_value(cms[1])
             except Exception as ex:

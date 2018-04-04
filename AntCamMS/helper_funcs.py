@@ -10,7 +10,7 @@ def rebin(a, shape):
     sh = shape[0],a.shape[0]//shape[0],shape[1],a.shape[1]//shape[1]
     return a.reshape(sh).mean(-1).mean(1)
 
-def find_centroid(image, threshold = 100, low_pass = True, binning = 8):
+def find_centroid(image, threshold = 120, low_pass = True, binning = 8):
     '''
     take a 2d array and find centroid of said array
     
@@ -39,7 +39,7 @@ def find_centroid(image, threshold = 100, low_pass = True, binning = 8):
         
         if imagef.max()>0:
             try:
-                cms = ndimage.center_of_mass(imagef)
+                cms = ndimage.center_of_mass(imagef.astype(np.float))
                 return cms
             except Exception as ex:
                 print('Error: %s' % ex)
@@ -52,6 +52,10 @@ def find_centroid(image, threshold = 100, low_pass = True, binning = 8):
         print('Height or width is not divisible by binning, returning (h/2,w/2)')
         return (h/(binning*2),w/(binning*2))
     
+class PIDController(object):
+    
+    def __init__(self,p):
+        pass
 
 
 if __name__ == '__main__':
