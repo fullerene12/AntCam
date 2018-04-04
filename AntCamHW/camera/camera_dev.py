@@ -5,19 +5,13 @@ Created on Mar 26, 2018
 '''
 
 import numpy as np
-import cv2
 import PySpin
-import time
-from queue import Queue
-from .cam_helper_classes import ImageEventHandler
 '''
 Camera Dev is the FoundryScope Driver for Point-Grey cameras. It is calling the 
 FLIR Spinnaker Python binding PySpin. The newest version of PySpin can be
 obtained from the FLIR official website
 '''
 class CameraDev(object):
-    data_qsize = 1000
-    recording = False
     
     def __init__(self,camera_sn):
         '''
@@ -61,18 +55,14 @@ class CameraDev(object):
             #get height and width of the field of view
             self.height = self.get_height()
             self.width = self.get_width()
-            
-            #setup buffer queue
-            self.data_q = Queue(self.data_qsize)
-            self.record_q = Queue(self.data_qsize)
-                   
+
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             return None
         
     def start(self):
         '''
-        Start the continous acquisition mode
+        Start the continuous acquisition mode
         '''
         try:
             #get handle for acquisition mode
@@ -100,27 +90,12 @@ class CameraDev(object):
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             
-    def config_event(self):
-        try:
-            self.event = ImageEventHandler(self)
-            self.cam.RegisterEvent(self.event)
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-        
-    def remove_event(self):
-        try:
-            self.cam.UnregisterEvent(self.event)
-            del self.event
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
-            
     def stop(self):
         '''
         stop the continuous acquisition mode
         '''
         try:
             self.cam.EndAcquisition()
-            self.data_q = Queue(self.data_qsize)
         except PySpin.SpinnakerException as ex:
                 print("Error: %s" % ex)
         
@@ -131,8 +106,6 @@ class CameraDev(object):
         try:
             #release the devices properly
             self.cam.DeInit()
-            del self.data_q
-            del self.record_q
             num_cam = self.cam_list.GetSize()
             num_init = 0
             for i in range(num_cam):
@@ -156,6 +129,18 @@ class CameraDev(object):
     Data operations
     '''
     def to_numpy(self,image):
+        '''
+        Convert an image object to data
+        There is a internal bug with the PySpin driver,
+        The program have a chance to crash when the camera drops frame
+        Use with caution
+        
+        2018/04/04 - I am contacting FLIR for this bug
+        
+        image: image object to get data from
+        return: numpy array containing image data if collection is successful
+        otherwise return an array of 1s
+        '''
         status = image.GetImageStatus()
         if not status == 0:
             print('corrupted image %i' % status)
@@ -168,7 +153,7 @@ class CameraDev(object):
             print('incomplete iamge, returning ones')
             return np.ones((self.height,self.width),dtype = np.uint8)
         try:
-            data = self.get_data(image)
+            data = image.GetData()
             if type(data) == np.ndarray:
                 new_data = np.copy(data)
                 if new_data.size == (self.height * self.width):
@@ -188,53 +173,13 @@ class CameraDev(object):
         except Exception as ex:
             print("Error: %s, returning ones, exception" % ex)
             return np.ones((self.height,self.width),dtype = np.uint8)
-        
-    def grab_data(self):
-        image = self.cam.GetNextImage()
-        image_converted = image.convert(PySpin.PixelFormat_Mono8)
-        data = self.to_numpy(image_converted)
-        image.Release()
-        return data
-        
-    
-    def get_data(self,image):
-        status = image.GetImageStatus()
-        if not status == 0:
-            print('corrupted image %i' % status)
-            return np.ones((self.height,self.width),dtype = np.uint8)
-        try:
-            data = image.GetData()
-            if type(data) == np.ndarray:
-                return np.copy(data)
-            else:
-                return np.ones((self.height,self.width),dtype = np.uint8)
-        except Exception as ex:
-            print('Error: %s' % ex)
-            return np.ones((self.height,self.width),dtype = np.uint8)
     
     def save_image(self,image):
+        '''
+        Save current image to a JPEG file
+        image: image object
+        '''
         image.Save('buffer')
-            
-    def empty(self):
-        return self.data_q.empty()
-            
-    def read(self):
-        return self.data_q.get()
-    
-    def write(self,data):
-        self.data_q.put(data)
-        
-    def record_empty(self):
-        return self.record_q.empty()
-    
-    def read_record_frame(self):
-        return self.record_q.get()
-    
-    def write_record_frame(self,image):
-        try:
-            self.record_q.put(PySpin.Image.Create(image))
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
             
     '''
     Setting Functions
@@ -310,6 +255,8 @@ class CameraDev(object):
     def set_exp(self,exp_time):
         '''
         set exposure time in microseconds
+        
+        exp_time: exposure time in microseconds
         '''
         try:
             if self.cam.ExposureTime.GetAccessMode() != PySpin.RW:
@@ -326,7 +273,7 @@ class CameraDev(object):
             
     def get_frame_rate(self):
         '''
-        get frame rate in Hz
+        get frame rate in fps
         '''
         try:
             return self.cam.AcquisitionFrameRate.GetValue()
@@ -336,7 +283,9 @@ class CameraDev(object):
     
     def set_frame_rate(self,fr):
         '''
-        set frame rate in Hz
+        set frame rate in fps
+        
+        set frame rate in fps
         '''
         try:
             return self.cam.AcquisitionFrameRate.SetValue(fr)
@@ -364,6 +313,8 @@ class CameraDev(object):
     def set_auto_exposure(self, mode):
         '''
         set the status of auto exposure, either on or off
+        
+        mode: boolean value of True(on) or False(off)
         '''
         try:
             if self.cam.ExposureAuto.GetAccessMode() != PySpin.RW:
@@ -377,23 +328,11 @@ class CameraDev(object):
             
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
-    
-    def get_auto_framerate(self):
-        try:
-            val = self.cam.AcquisitionFrameRateAuto.GetValue()
-            print(val)
-            
-            if val == 2:
-                return True
-            elif val == 0:
-                return False
-            else:
-                print('Unable to get auto exposure setting')
-
-        except PySpin.SpinnakerException as ex:
-            print("Error: %s" % ex)
         
     def get_video_mode(self):
+        '''
+        get the video mode of the camera
+        '''
         try:
             node_video_mode = PySpin.CEnumerationPtr(self.nodemap.GetNode("VideoMode"))
             return int(node_video_mode.GetCurrentEntry().GetSymbolic()[4])
@@ -401,6 +340,12 @@ class CameraDev(object):
             print("Error: %s" % ex)
             
     def set_video_mode(self,mode_number):
+        '''
+        set the video mode of the camera, depends on the model, certain mode
+        might not exist 
+        
+        mode_number: integer number of the video mode
+        '''
         try:
             node_video_mode = PySpin.CEnumerationPtr(self.nodemap.GetNode("VideoMode"))
             Mode0 = node_video_mode.GetEntryByName("Mode0")
@@ -416,6 +361,16 @@ class CameraDev(object):
     Streaming information
     '''
     def get_feature(self,nodemap,node_name,feature_name):
+        '''
+        method to get any stt from a camera
+        
+        nodemap: the node map of a collection of camera properties,
+                e.g. TLDEVICE
+        
+        node_name: Name of the specific node, such as DeviceInformation
+        
+        feature_name: Name of the specific feature, such as ModelNumber
+        '''
         try:
             node = PySpin.CCategoryPtr(nodemap.GetNode(node_name))
             if PySpin.IsAvailable(node) and PySpin.IsReadable(node):
@@ -431,6 +386,16 @@ class CameraDev(object):
             print("Error: %s" % ex)         
 
     def set_feature(self,nodemap,node_name,feature_name,value):
+        '''
+        method to get any stt from a camera
+        
+        nodemap: the node map of a collection of camera properties,
+                e.g. TLDEVICE
+        
+        node_name: Name of the specific node, such as DeviceInformation
+        
+        feature_name: Name of the specific feature, such as ModelNumber
+        '''
         try:
             node = PySpin.CCategoryPtr(nodemap.GetNode(node_name))
             if PySpin.IsAvailable(node) and PySpin.IsReadable(node):
@@ -461,20 +426,6 @@ class CameraDev(object):
         return self.set_feature(self.nodemap_tlstream,
                                 'BufferHandlingControl',
                                 'StreamDefaultBufferCount',
-                                str(value))
-    
-    def get_crc(self):
-        return int(self.get_feature(self.nodemap_tlstream,
-                                    'BufferHandlingControl',
-                                    'StreamCRCCheckEnable'))
-        
-    def set_crc(self,value):
-        """
-        This function set the buffer count of the stream
-        """
-        return self.set_feature(self.nodemap_tlstream,
-                                'BufferHandlingControl',
-                                'StreamCRCCheckEnable',
                                 str(value))
     
             

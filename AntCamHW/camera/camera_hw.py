@@ -68,12 +68,6 @@ class CameraHW(HardwareComponent):
     def to_numpy(self,image):
         return self._dev.to_numpy(image)
         
-    def config_event(self,run_func):
-        self._dev.config_event(run_func)
-        
-    def remove_event(self):
-        self._dev.remove_event()
-        
     def disconnect(self):
         '''
         need bug fix for pointer issues
