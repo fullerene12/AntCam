@@ -164,11 +164,14 @@ class CameraDev(object):
         if buffer_size == 0:
             print('corrupted image %i' % buffer_size)
             return np.ones((self.height,self.width),dtype = np.uint8)
+        if image.IsIncomplete():
+            print('incomplete iamge, returning ones')
+            return np.ones((self.height,self.width),dtype = np.uint8)
         try:
             data = self.get_data(image)
             if type(data) == np.ndarray:
                 new_data = np.copy(data)
-                if new_data.size == self.height * self.width:
+                if new_data.size == (self.height * self.width):
                     output_data = new_data.reshape((self.height,self.width))
                     return output_data
                 else:
@@ -183,8 +186,15 @@ class CameraDev(object):
             print("Error: %s, returning ones" % ex)
             return np.ones((self.height,self.width),dtype = np.uint8)
         except Exception as ex:
-            print("Error: %s, returning ones" % ex)
+            print("Error: %s, returning ones, exception" % ex)
             return np.ones((self.height,self.width),dtype = np.uint8)
+        
+    def grab_data(self):
+        image = self.cam.GetNextImage()
+        image_converted = image.convert(PySpin.PixelFormat_Mono8)
+        data = self.to_numpy(image_converted)
+        image.Release()
+        return data
         
     
     def get_data(self,image):

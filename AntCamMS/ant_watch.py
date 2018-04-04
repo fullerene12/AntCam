@@ -19,8 +19,15 @@ import queue
 from .helper_funcs import find_centroid
 
 class SubMeasurementQThread(MeasurementQThread):
+    '''
+    Sub-Thread for different loops in measurement
+    '''
 
     def __init__(self, run_func, parent=None):
+        '''
+        run_func: user-defined function to run in the loop
+        parent = parent thread, usually None
+        '''
         super(MeasurementQThread, self).__init__(parent)
         self.run_func = run_func
         self.interrupted = False
@@ -63,8 +70,8 @@ class AntWatchMeasure(Measurement):
         # All settings are automatically added to the Microscope user interface
         self.settings.New('save_h5', dtype=bool, initial=True)
         self.settings.New('save_video', dtype = bool, initial = False)
-        self.settings.New('sampling_period', dtype=float, unit='s', initial=0.1)
-        self.settings.New('writing_flag',dtype=bool,initial = False, ro= False)
+        
+        # x and y is for transmitting signal
         self.settings.New('x',dtype = float, initial = 32, ro = True, vmin = 0, vmax = 63.5)
         self.settings.New('y',dtype = float, initial = 32, ro = True, vmin = 0, vmax = 63.5)
         
@@ -117,7 +124,10 @@ class AntWatchMeasure(Measurement):
         self.tracker_image=pg.ImageItem()
         self.tracker_view.addItem(self.tracker_image)
         
+        # initiate tracker buffer
         self.tracker_data = np.zeros((64,64),dtype = np.uint8)
+        
+        #counter used for reducing refresh rate
         self.wide_disp_counter = 0
         self.track_disp_counter = 0
         
@@ -128,26 +138,28 @@ class AntWatchMeasure(Measurement):
         its update frequency is defined by self.display_update_period
         """
         
-        
-        if self.wide_cam.empty():
+        # check availability of display queue of the wide camera
+        if not hasattr(self,'wide_disp_queue'):
+            pass
+        elif self.wide_disp_queue.empty():
             pass
         else:
             try:
-                wide_disp_data = self.wide_cam.read()
+                wide_disp_image = self.wide_disp_queue.get()
                 
                 self.wide_disp_counter += 1
                 self.wide_disp_counter %= 2
                 if self.wide_disp_counter == 0:
-                    wide_disp_image = self.wide_cam.to_numpy(wide_disp_data)
                     if type(wide_disp_image) == np.ndarray:
                         if wide_disp_image.shape == (self.wide_cam.settings.height.value(),self.wide_cam.settings.width.value()):
                             try:
-                                self.wide_cam_image.setImage(np.copy(wide_disp_image))
+                                self.wide_cam_image.setImage(wide_disp_image)
                             except Exception as ex:
                                 print('Error: %s' % ex)
             except Exception as ex:
                 print("Error: %s" % ex)
-                 
+        
+        # check availability of display queue of the track camera         
         if not hasattr(self,'track_disp_queue'):
             pass
         elif self.track_disp_queue.empty():
@@ -161,7 +173,7 @@ class AntWatchMeasure(Measurement):
                     if type(track_disp_image) == np.ndarray:
                         if track_disp_image.shape == (self.track_cam.settings.height.value(),self.track_cam.settings.width.value()):
                             try:
-                                self.track_cam_image.setImage(np.copy(track_disp_image))
+                                self.track_cam_image.setImage(track_disp_image)
                             except Exception as ex:
                                 print('Error: %s' % ex)
                                 
@@ -201,8 +213,6 @@ class AntWatchMeasure(Measurement):
         self.wide_cam._dev.set_buffer_count(500)
 
         if self.settings.save_video.value():
-            self.track_cam._dev.recording = True
-            self.wide_cam._dev.recording = True
             save_dir = self.app.settings.save_dir.value()
             data_path = os.path.join(save_dir,self.app.settings.sample.value())
             try:
@@ -215,29 +225,19 @@ class AntWatchMeasure(Measurement):
             frame_rate = self.wide_cam.settings.frame_rate.value()
             self.recorder.create_file('track_mov',frame_rate)
             self.recorder.create_file('wide_mov',frame_rate)
-            
-            self.rec_thread = SubMeasurementQThread(self.record_frame)
-            self.interrupt_subthread.connect(self.rec_thread.interrupt)
         
-        
-        
-        self.track_output_queue = queue.Queue(1000)
         self.track_disp_queue = queue.Queue(1000)
         self.wide_disp_queue = queue.Queue(1000)
-        self.comp_thread = SubMeasurementQThread(self.compute_location)
+        self.comp_thread = SubMeasurementQThread(self.camera_action)
         self.interrupt_subthread.connect(self.comp_thread.interrupt)
 
         try:
             threshold = 100
-            self.i = 0
-            self.track_cam.config_event()
-            self.wide_cam.config_event()
-            
-            if self.settings.save_video.value():
-                self.rec_thread.start()
-            self.comp_thread.start()
+            self.track_i = 0
+            self.wide_i = 0
             self.track_cam.start()
             self.wide_cam.start()
+            self.comp_thread.start()
             # Will run forever until interrupt is called.
             while not self.interrupt_measurement_called:
                 #i += 1
@@ -288,46 +288,56 @@ class AntWatchMeasure(Measurement):
 
         finally:
             
+            self.comp_thread.terminate()
             self.track_cam.stop()
             self.wide_cam.stop()
-            self.track_cam.remove_event()
-            self.wide_cam.remove_event()
             self.track_cam._dev.set_buffer_count(10)
             self.wide_cam._dev.set_buffer_count(10)
             if self.settings.save_video.value():
-                self.rec_thread.terminate()
-                del self.rec_thread
                 self.recorder.close()
-                self.track_cam._dev.recording = False
-                self.wide_cam._dev.recording = False
-            
-            self.comp_thread.terminate()
+                       
             del self.comp_thread
             del self.track_disp_queue
             del self.wide_disp_queue
-            del self.track_output_queue
-          
-    def record_frame(self):
-        if self.settings.save_video.value():
-            self.recorder.save_frame('track_mov',self.track_cam._dev.read_record_frame())
-            self.recorder.save_frame('wide_mov',self.wide_cam._dev.read_record_frame())
             
-    def compute_location(self):
+    def camera_action(self):
         '''
         format the image properly, and find centroid on the track cam
         '''
         try:
-            track_disp_data = self.track_cam.read()
-            track_disp_image = self.track_cam.to_numpy(track_disp_data)
-            track_comp_image = np.copy(track_disp_image)
-            self.track_disp_queue.put(np.fliplr(track_disp_image.transpose()))
-            try:
-                self.i += 1
-                cms = find_centroid(image = track_comp_image, threshold = 120, binning = 8)
-                self.settings.x.update_value(cms[0])
-                self.settings.y.update_value(cms[1])
-            except Exception as ex:
-                print('CMS Error : %s' % ex)
+            self.track_i +=1
+            self.track_i %= 2
+            track_image = self.track_cam._dev.cam.GetNextImage()
+            track_image_converted = track_image.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
+            track_image.Release()
+            if self.settings.save_video.value():
+                self.recorder.save_frame('track_mov',track_image_converted)
+            if self.track_i == 0:
+                time.sleep(0.001)
+                track_data = self.track_cam._dev.to_numpy(track_image_converted)
+                track_disp_data = np.copy(track_data)
+                self.track_disp_queue.put(np.fliplr(track_disp_data.transpose()))
+                try:
+                    cms = find_centroid(image = track_data, threshold = 120, binning = 8)
+                    self.settings.x.update_value(cms[0])
+                    self.settings.y.update_value(cms[1])
+                except Exception as ex:
+                    print('CMS Error : %s' % ex)
+        except Exception as ex:
+            print('Error : %s' % ex)
+            
+        try:
+            self.wide_i += 1
+            self.wide_i %= 5
+            wide_image = self.wide_cam._dev.cam.GetNextImage()
+            wide_image_converted = wide_image.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
+            wide_image.Release()
+            if self.settings.save_video.value():
+                self.recorder.save_frame('wide_mov',wide_image_converted)
+            if self.wide_i == 0:
+                time.sleep(0.001)
+                wide_data = self.wide_cam._dev.to_numpy(wide_image_converted)
+                self.wide_disp_queue.put(wide_data)
         except Exception as ex:
             print('Error : %s' % ex)
                 
