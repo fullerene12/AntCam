@@ -240,42 +240,9 @@ class AntWatchMeasure(Measurement):
             self.comp_thread.start()
             # Will run forever until interrupt is called.
             while not self.interrupt_measurement_called:
-                #i += 1
-#                 track_disp_data = self.track_cam._dev.data_q.get()
-#                 wide_disp_data = self.wide_cam._dev.data_q.get()
-                #print(self.track_cam._dev.data_q.qsize())
-                time.sleep(0.5)
-                    
-                    # wait between readings.
-                    # We will use our sampling_period settings to define time
-                
-#                 #track_disp_data =np.copy(track_output_data)
-#                 self.track_disp_queue.put(track_disp_data)
-#                 
-                
-#                 self.wide_disp_queue.put(wide_disp_data)
-# #             self.track_output_queue.put(track_output_data)
-#                 comp_buffer = self.track_output_queue.get()
-#                 
-#                 
-#                 if type(comp_buffer) == np.ndarray:
-#                     height = self.track_cam.settings.height.value()
-#                     width = self.track_cam.settings.width.value()
-#                     
-#                     if comp_buffer.shape == (height,width):
-#                         i += 1
-#                         time1 = time.clock()
-#                         try:
-#                             cms = find_centroid(image = comp_buffer, threshold = 100, binning = 16)
-#                         except Exception as ex:
-#                             print('Error: %s' % ex)
-#                             cms = (512,512)
-#                         time2 = time.clock()
-#                         
-#                         if i%3600 == 0:
-#                             print((time2 - time1) * 1000, cms)
-
-            
+                #wait for 0.1ms
+                time.sleep(0.1)
+        
                 if self.interrupt_measurement_called:
                     # Listen for interrupt_measurement_called flag.
                     # This is critical to do, if you don't the measurement will
@@ -287,12 +254,8 @@ class AntWatchMeasure(Measurement):
                     break
 
         finally:
-            
-            self.comp_thread.terminate()
             self.track_cam.stop()
             self.wide_cam.stop()
-            self.track_cam._dev.set_buffer_count(10)
-            self.wide_cam._dev.set_buffer_count(10)
             if self.settings.save_video.value():
                 self.recorder.close()
                        
@@ -300,6 +263,10 @@ class AntWatchMeasure(Measurement):
             del self.track_disp_queue
             del self.wide_disp_queue
             
+#             if self.settings['save_h5']:
+#                 # make sure to close the data file
+#                 self.h5file.close()
+                
     def camera_action(self):
         '''
         format the image properly, and find centroid on the track cam
@@ -342,6 +309,3 @@ class AntWatchMeasure(Measurement):
             print('Error : %s' % ex)
                 
 
-#             if self.settings['save_h5']:
-#                 # make sure to close the data file
-#                 self.h5file.close()

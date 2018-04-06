@@ -3,25 +3,15 @@ Created on Apr 5, 2018
 
 @author: Hao Wu
 '''
-from daq_do_dev import DAQContDOTask,DAQCOTask,DAQSimpleDOTask
+from .daq_do_dev import DAQCOTask,DAQSimpleDOTask
+from .motor_helper_funcs import trans_cord
 import numpy as np
 
-def transform_cord(old_cord, angle = 45):
-    theta = np.radians(angle)
-    c, s = np.cos(theta), np.sin(theta)
-    R = np.matrix([[c, -s], [s, c]])
-    new_cord = np.array(np.matmul(R,old_cord).astype(np.int32)).squeeze()
-    direction = (new_cord>0).astype(np.uint8)
-
-    return direction,np.abs(new_cord)
-    
 
 class DAQMotorDev(object):
     '''
     This the device wrapper for stepper motor driver controlled by NIDAQ
     '''
-
-
     def __init__(self,chans,counter,term,freq,dc):
         '''
         This initialize the device
@@ -83,7 +73,7 @@ class DAQMotorDev(object):
     def move_cartesian(self,num_pulses,angle = 45):
         old_cord = np.array(num_pulses)
         old_cord[1] *= -1
-        direction, new_pulses = transform_cord(old_cord,angle)
+        direction, new_pulses = trans_cord(old_cord,angle)
         self.move(direction,new_pulses)
 
     def done(self):
