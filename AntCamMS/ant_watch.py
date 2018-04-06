@@ -70,6 +70,9 @@ class AntWatchMeasure(Measurement):
         # All settings are automatically added to the Microscope user interface
         self.settings.New('save_h5', dtype=bool, initial=True)
         self.settings.New('save_video', dtype = bool, initial = False)
+        self.settings.New('pixel_size', dtype = float, initial = 0.05547850208, ro = True)
+        self.settings.New('binning', dtype = int, initial = 8, ro = True)
+        self.settings.New('threshold', dtype = int, initial = 100, ro = False)
         
         # x and y is for transmitting signal
         self.settings.New('x',dtype = float, initial = 32, ro = True, vmin = 0, vmax = 63.5)
@@ -83,6 +86,7 @@ class AntWatchMeasure(Measurement):
         self.track_cam = self.app.hardware['track_cam']
         self.wide_cam = self.app.hardware['wide_cam']
         self.recorder = self.app.hardware['flirrec']
+        self.daqmotor = self.app.hardware['daqmotor']
         
         #setup experiment condition
         self.track_cam.settings.frame_rate.update_value(15)
@@ -99,6 +103,20 @@ class AntWatchMeasure(Measurement):
         # connect ui widgets to measurement/hardware settings or functions
         self.ui.start_pushButton.clicked.connect(self.start)
         self.ui.interrupt_pushButton.clicked.connect(self.interrupt)
+        self.ui.up_pushButton.clicked.connect(self.daqmotor.operations['up'])
+        self.ui.down_pushButton.clicked.connect(self.daqmotor.operations['down'])
+        self.ui.left_pushButton.clicked.connect(self.daqmotor.operations['left'])
+        self.ui.right_pushButton.clicked.connect(self.daqmotor.operations['right'])
+        self.daqmotor.settings.manual.connect_to_widget(self.ui.manual_checkBox)
+        self.daqmotor.settings.manual_steps.connect_to_widget(self.ui.manual_steps_doubleSpinBox)
+        
+        self.daqmotor.settings.x.connect_to_widget(self.ui.x_doubleSpinBox)
+        self.daqmotor.settings.y.connect_to_widget(self.ui.y_doubleSpinBox)
+        self.daqmotor.settings.move_to_x.connect_to_widget(self.ui.move_to_x_doubleSpinBox)
+        self.daqmotor.settings.move_to_y.connect_to_widget(self.ui.move_to_y_doubleSpinBox)
+        self.ui.move_to_pushButton.clicked.connect(self.daqmotor.operations['move_to'])
+        self.ui.zero_pushButton.clicked.connect(self.daqmotor.operations['zero'])
+        self.ui.home_pushButton.clicked.connect(self.daqmotor.operations['home'])
         
         # Set up pyqtgraph graph_layout in the UI
         self.wide_cam_layout=pg.GraphicsLayoutWidget()
@@ -211,6 +229,7 @@ class AntWatchMeasure(Measurement):
         # the finally block can clean things up, e.g. close the data file object.
         self.track_cam._dev.set_buffer_count(500)
         self.wide_cam._dev.set_buffer_count(500)
+        #self.tracker_
 
         if self.settings.save_video.value():
             save_dir = self.app.settings.save_dir.value()
@@ -285,7 +304,9 @@ class AntWatchMeasure(Measurement):
                 track_disp_data = np.copy(track_data)
                 self.track_disp_queue.put(np.fliplr(track_disp_data.transpose()))
                 try:
-                    cms = find_centroid(image = track_data, threshold = 120, binning = 8)
+                    cms = find_centroid(image = track_data, 
+                                        threshold = self.settings.threshold.value(), 
+                                        binning = self.settings.binning.value())
                     self.settings.x.update_value(cms[0])
                     self.settings.y.update_value(cms[1])
                 except Exception as ex:
