@@ -128,6 +128,15 @@ class FLIRCamDev(object):
     '''
     Data operations
     '''
+    def read(self):
+        '''
+        read and return the next frame from the camera
+        '''
+        image = self.cam.GetNextImage()
+        image_converted = image.Convert(PySpin.PixelFormat_Mono8,PySpin.HQ_LINEAR)
+        image.Release()
+        return image_converted
+    
     def to_numpy(self,image):
         '''
         Convert an image object to data

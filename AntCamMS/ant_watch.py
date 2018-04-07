@@ -272,14 +272,12 @@ class AntWatchMeasure(Measurement):
         try:
             self.track_i +=1
             self.track_i %= 2
-            track_image = self.track_cam._dev.cam.GetNextImage()
-            track_image_converted = track_image.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
-            track_image.Release()
+            track_image = self.track_cam.read()
             if self.settings.save_video.value():
-                self.recorder.save_frame('track_mov',track_image_converted)
+                self.recorder.save_frame('track_mov',track_image)
             if self.track_i == 0:
                 time.sleep(0.001)
-                track_data = self.track_cam._dev.to_numpy(track_image_converted)
+                track_data = self.track_cam._dev.to_numpy(track_image)
                 track_disp_data = np.copy(track_data)
                 self.track_disp_queue.put(np.fliplr(track_disp_data.transpose()))
                 try:
@@ -296,14 +294,12 @@ class AntWatchMeasure(Measurement):
         try:
             self.wide_i += 1
             self.wide_i %= 5
-            wide_image = self.wide_cam._dev.cam.GetNextImage()
-            wide_image_converted = wide_image.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
-            wide_image.Release()
+            wide_image= self.wide_cam.read()
             if self.settings.save_video.value():
-                self.recorder.save_frame('wide_mov',wide_image_converted)
+                self.recorder.save_frame('wide_mov',wide_image)
             if self.wide_i == 0:
                 time.sleep(0.001)
-                wide_data = self.wide_cam._dev.to_numpy(wide_image_converted)
+                wide_data = self.wide_cam._dev.to_numpy(wide_image)
                 self.wide_disp_queue.put(wide_data)
         except Exception as ex:
             print('Error : %s' % ex)

@@ -39,7 +39,7 @@ class DAQSimpleDOTask(Task):
         
         timeout: timeout in seconds
         '''
-        self.write(np.array([1],dtype = np.uint8),timeout)
+        self.write(np.array([0],dtype = np.uint8),timeout)
         
     def close(self):
         '''
