@@ -19,7 +19,7 @@ class DAQSimpleDOTask(Task):
         '''
         write a single sample to the digital line
         
-        value: 0=low 1=high
+        value: 1-D array with the size of the number of channels take np.uint8 array
         timeout: timeout in seconds
         '''
         written = c_int32(0)
@@ -31,7 +31,7 @@ class DAQSimpleDOTask(Task):
         
         timeout: timeout in seconds
         '''
-        self.write(1,timeout)
+        self.write(np.array([1],dtype = np.uint8),timeout)
         
     def low(self,timeout =0.0001):
         '''
@@ -39,19 +39,7 @@ class DAQSimpleDOTask(Task):
         
         timeout: timeout in seconds
         '''
-        self.write(0,timeout)
-
-    def start(self):
-        '''
-        start task
-        '''
-        self.StartTask()
-        
-    def stop(self):
-        '''
-        stop task
-        '''
-        self.StopTask()
+        self.write(np.array([0],dtype = np.uint8),timeout)
         
     def close(self):
         '''
