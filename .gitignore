@@ -108,3 +108,4 @@ data/
 *.avi
 *.autosave
 AntCamHW/camera/examples/
+*.h5
