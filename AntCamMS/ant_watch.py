@@ -68,11 +68,13 @@ class AntWatchMeasure(Measurement):
         # Measurement Specific Settings
         # This setting allows the option to save data to an h5 data file during a run
         # All settings are automatically added to the Microscope user interface
-        self.settings.New('save_h5', dtype=bool, initial=True)
         self.settings.New('save_video', dtype = bool, initial = False)
         self.settings.New('pixel_size', dtype = float, initial = 0.05547850208, ro = True)
         self.settings.New('binning', dtype = int, initial = 8, ro = True)
         self.settings.New('threshold', dtype = int, initial = 100, ro = False)
+        self.settings.New('proportional', dtype = float, initial = 1, ro = False)
+        self.settings.New('integral', dtype = float, initial = 0, ro = False)
+        self.settings.New('derivative', dtype = float, initial = 0, ro = False)
         
         # x and y is for transmitting signal
         self.settings.New('x',dtype = float, initial = 32, ro = True, vmin = 0, vmax = 63.5)
@@ -209,24 +211,6 @@ class AntWatchMeasure(Measurement):
         It should not update the graphical interface directly, and should only
         focus on data acquisition.
         """
-#         # first, create a data file
-#         if self.settings['save_h5']:
-#             # if enabled will create an HDF5 file with the plotted data
-#             # first we create an H5 file (by default autosaved to app.settings['save_dir']
-#             # This stores all the hardware and app meta-data in the H5 file
-#             self.h5file = h5_io.h5_base_file(app=self.app, measurement=self)
-#             
-#             # create a measurement H5 group (folder) within self.h5file
-#             # This stores all the measurement meta-data in this group
-#             self.h5_group = h5_io.h5_create_measurement_group(measurement=self, h5group=self.h5file)
-#             
-#             # create an h5 dataset to store the data
-#             self.buffer_h5 = self.h5_group.create_dataset(name  = 'buffer', 
-#                                                           shape = self.buffer.shape,
-#                                                           dtype = self.buffer.dtype)
-        
-        # We use a try/finally block, so that if anything goes wrong during a measurement,
-        # the finally block can clean things up, e.g. close the data file object.
         self.track_cam._dev.set_buffer_count(500)
         self.wide_cam._dev.set_buffer_count(500)
         #self.tracker_
@@ -251,7 +235,6 @@ class AntWatchMeasure(Measurement):
         self.interrupt_subthread.connect(self.comp_thread.interrupt)
 
         try:
-            threshold = 100
             self.track_i = 0
             self.wide_i = 0
             self.track_cam.start()
@@ -281,11 +264,7 @@ class AntWatchMeasure(Measurement):
             del self.comp_thread
             del self.track_disp_queue
             del self.wide_disp_queue
-            
-#             if self.settings['save_h5']:
-#                 # make sure to close the data file
-#                 self.h5file.close()
-                
+
     def camera_action(self):
         '''
         format the image properly, and find centroid on the track cam

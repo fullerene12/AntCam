@@ -53,9 +53,60 @@ def find_centroid(image, threshold = 120, low_pass = True, binning = 8):
         return (h/(binning*2),w/(binning*2))
     
 class PIDController(object):
+    '''
+    PID controller object, takes in an error signal (float) and output a feedback
+    '''
     
-    def __init__(self,p):
-        pass
+    def __init__(self, p = 1, i = 0, d = 0, msize = 5):
+        '''
+        initialize the controller
+        
+        p: proportional factor (float)
+        i: integral factor (float)
+        d: derivative factor (float)
+        msize: the size of memory used for integration (int)
+        '''
+        self.p = p
+        self.i = i
+        self.d = d
+        self.msize = msize
+        self.memory = np.zeros((self.msize,))
+        self.last_error = 0
+        self.first_trial = True
+        
+    def memorize_error(self,error):
+        '''
+        take in a new error and put it into internal memory
+        '''
+        self.memory[0:-1] = self.memory[1:]
+        self.memory[-1] = error
+    
+    def diff_error(self,error):
+        '''
+        differentiate the error signal to find the derivative
+        '''
+        return error - self.last_error
+    
+    def feedback(self,error):
+        '''
+        take an error and give a PID feedback
+        '''
+        output = 0
+        output += self.p * error
+        if not self.i == 0:
+            self.memorize_error(error)
+            output += self.i * self.memory.sum()
+        if not self.d == 0:
+            if self.first_trial:
+                self.first_trial = False
+            else:
+                deriv = self.diff_error
+                output += self.d * deriv
+            self.last_error = error
+        return output
+            
+            
+        
 
 
 if __name__ == '__main__':
