@@ -1,4 +1,4 @@
-# Python Device Wrappers
+# AntCam
 
 This is the software for controlling the ant tracking setup, the work was done at the [Murthy Lab](https://vnmurthylab.org/) at Harvard University.
 
