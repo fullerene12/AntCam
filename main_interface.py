@@ -4,6 +4,7 @@ Created on Mar 26, 2018
 @author: Hao Wu
 '''
 from ScopeFoundry import BaseMicroscopeApp
+from qtpy import QtGui
 
 class AntCamApp(BaseMicroscopeApp):
 
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     import sys
     
     app = AntCamApp(sys.argv)
-    
+    app.ui.setWindowIcon(QtGui.QIcon('icon.ico'))
     app.hardware['track_cam'].connected.update_value(True)
     app.hardware['wide_cam'].connected.update_value(True)
     app.hardware['flirrec'].connected.update_value(True)

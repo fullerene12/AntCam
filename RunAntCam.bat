@@ -1,0 +1,1 @@
+C:\ProgramData\Anaconda3\python main_interface.py %*
