@@ -53,9 +53,12 @@ class AntCamApp(BaseMicroscopeApp):
 
 if __name__ == '__main__':
     import sys
-    
+    import ctypes
+
+    myappid = 'MurthyLab.PyLab.AntCam.v1.0.0' # arbitrary string
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     app = AntCamApp(sys.argv)
-    app.ui.setWindowIcon(QtGui.QIcon('icon.ico'))
+    app.ui.setWindowIcon(QtGui.QIcon('ant_icon.ico'))
     app.hardware['track_cam'].connected.update_value(True)
     app.hardware['wide_cam'].connected.update_value(True)
     app.hardware['flirrec'].connected.update_value(True)
