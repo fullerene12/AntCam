@@ -100,7 +100,7 @@ class PIDController(object):
             if self.first_trial:
                 self.first_trial = False
             else:
-                deriv = self.diff_error
+                deriv = self.diff_error(error)
                 output += self.d * deriv
             self.last_error = error
         return output

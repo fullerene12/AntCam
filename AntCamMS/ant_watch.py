@@ -16,7 +16,7 @@ from qtpy import QtCore
 from qtpy.QtCore import QObject
 import os
 import queue
-from .helper_funcs import find_centroid
+from .helper_funcs import find_centroid, PIDController
 
 class SubMeasurementQThread(MeasurementQThread):
     '''
@@ -69,10 +69,11 @@ class AntWatchMeasure(Measurement):
         # This setting allows the option to save data to an h5 data file during a run
         # All settings are automatically added to the Microscope user interface
         self.settings.New('save_video', dtype = bool, initial = False)
-        self.settings.New('pixel_size', dtype = float, initial = 0.05547850208, ro = True)
+        self.settings.New('track_ant',dtype = bool, initial = False)
+        self.settings.New('pixel_size', dtype = float, initial = 0.11095700416, ro = True)
         self.settings.New('binning', dtype = int, initial = 8, ro = True)
-        self.settings.New('threshold', dtype = int, initial = 100, ro = False)
-        self.settings.New('proportional', dtype = float, initial = 1, ro = False)
+        self.settings.New('threshold', dtype = int, initial = 115, ro = False)
+        self.settings.New('proportional', dtype = float, initial = 0.15, ro = False)
         self.settings.New('integral', dtype = float, initial = 0, ro = False)
         self.settings.New('derivative', dtype = float, initial = 0, ro = False)
         
@@ -201,7 +202,7 @@ class AntWatchMeasure(Measurement):
                     y = int(self.settings.y.value())
                     self.tracker_data[:] = 0
                     self.tracker_data[x,y] = 1
-                    self.tracker_image.setImage(np.fliplr(np.copy(self.tracker_data).transpose()))
+                    self.tracker_image.setImage(np.copy(self.tracker_data))
             except Exception as ex:
                 print("Error: %s" % ex)
 
@@ -231,8 +232,18 @@ class AntWatchMeasure(Measurement):
         
         self.track_disp_queue = queue.Queue(1000)
         self.wide_disp_queue = queue.Queue(1000)
+        self.motor_queue = queue.Queue(1000)
         self.comp_thread = SubMeasurementQThread(self.camera_action)
+        self.motor_thread = SubMeasurementQThread(self.motor_action)
+        
         self.interrupt_subthread.connect(self.comp_thread.interrupt)
+        self.interrupt_subthread.connect(self.motor_thread.interrupt)
+        
+        self.pid = PIDController(p = self.settings.proportional.value(),
+                             i = self.settings.integral.value(),
+                             d = self.settings.derivative.value())
+        self.midpoint = (self.track_cam.settings.height.value()//self.settings.binning.value())//2
+        self.pix_size = self.settings.pixel_size.value() * self.settings.binning.value()
 
         try:
             self.track_i = 0
@@ -240,10 +251,12 @@ class AntWatchMeasure(Measurement):
             self.track_cam.start()
             self.wide_cam.start()
             self.comp_thread.start()
+            self.motor_thread.start()
+            
             # Will run forever until interrupt is called.
             while not self.interrupt_measurement_called:
                 #wait for 0.1ms
-                time.sleep(0.1)
+                time.sleep(0.5)
         
                 if self.interrupt_measurement_called:
                     # Listen for interrupt_measurement_called flag.
@@ -260,8 +273,10 @@ class AntWatchMeasure(Measurement):
             self.wide_cam.stop()
             if self.settings.save_video.value():
                 self.recorder.close()
-                       
+            
+            del self.motor_thread           
             del self.comp_thread
+            del self.motor_queue
             del self.track_disp_queue
             del self.wide_disp_queue
 
@@ -284,8 +299,11 @@ class AntWatchMeasure(Measurement):
                     cms = find_centroid(image = track_data, 
                                         threshold = self.settings.threshold.value(), 
                                         binning = self.settings.binning.value())
-                    self.settings.x.update_value(cms[0])
-                    self.settings.y.update_value(cms[1])
+                    tracker_size = self.track_cam.settings.height.value()//self.settings.binning.value()
+                    self.settings.x.update_value(cms[1])
+                    self.settings.y.update_value(tracker_size - cms[0])
+                    if self.settings.track_ant.value():
+                        self.motor_queue.put((cms[1],tracker_size - cms[0]))
                 except Exception as ex:
                     print('CMS Error : %s' % ex)
         except Exception as ex:
@@ -303,5 +321,22 @@ class AntWatchMeasure(Measurement):
                 self.wide_disp_queue.put(wide_data)
         except Exception as ex:
             print('Error : %s' % ex)
+            
+    def motor_action(self):
+        if self.settings.track_ant.value():
+            cords = self.motor_queue.get()
+            error_x = (cords[0] - self.midpoint) * self.pix_size
+            error_y = (cords[1] - self.midpoint) * self.pix_size
+            x_fb = self.pid.feedback(error_x)
+            y_fb = self.pid.feedback(error_y)
+            new_x = self.daqmotor.settings.x.value() + x_fb
+            new_y = self.daqmotor.settings.y.value() + y_fb
+            if new_x > self.daqmotor.settings.bound_x.value() and new_x < self.daqmotor.settings.move_to_x.vmax:
+                self.daqmotor.settings.move_to_x.update_value(new_x)
+            if new_y > self.daqmotor.settings.bound_y.value() and new_y < self.daqmotor.settings.move_to_y.vmax:
+                self.daqmotor.settings.move_to_y.update_value(new_y)
+            self.daqmotor.move_to_auto()
+        else:
+            time.sleep(0.2)
                 
 

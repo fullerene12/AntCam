@@ -35,19 +35,13 @@ class Recorder(object):
         #create instance for recorder    
         self.rec = PySpin.AVIRecorder()
         
+        if os.path.exists(self.fname + '-0000.avi'):
+            print("File already exists, saving with timestamp")
+            timestamp =time.strftime('%H%M%S',time.localtime())
+            self.fname = self.fname + timestamp
         #create file
         try:
             self.rec.AVIOpen(self.fname,option)
-        except FileExistsError as ex:
-            print("Error: %s" % ex)
-            print("Saving with timestamp")
-            timestamp =time.strftime('%H%M%S',time.localtime())
-            self.fname = self.fname + timestamp
-            try:
-                self.rec.AVIOpen(self.fname,option)
-            except Exception as ex:
-                print("Error: %s" % ex)
-                    
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
         

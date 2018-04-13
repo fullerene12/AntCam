@@ -25,15 +25,20 @@ class DAQMotorHW(HardwareComponent):
         self.settings.New(name = 'y_steps', dtype = int, initial = 0, ro = True)
         
         self.settings.New(name ='move_to_x', dtype = float, initial = 0, 
-                          vmin = 0, vmax = 482, ro = False)
-        self.settings.New(name ='move_to_y', dtype = float, initial = 0, 
                           vmin = 0, vmax = 450, ro = False)
+        self.settings.New(name ='move_to_y', dtype = float, initial = 0, 
+                          vmin = 0, vmax = 430, ro = False)
+        
+        self.settings.New(name ='bound_x', dtype = float, initial = 7, 
+                          vmin = 0, vmax = 450, ro = False)
+        self.settings.New(name ='bound_y', dtype = float, initial = 7, 
+                          vmin = 0, vmax = 430, ro = False)
         
         self.settings.New(name ='home_x', dtype = float, initial = 251.4, 
-                          vmin = 0, vmax = 482, ro = True)
-        
-        self.settings.New(name ='home_y', dtype = float, initial = 8.67, 
                           vmin = 0, vmax = 450, ro = True)
+        
+        self.settings.New(name ='home_y', dtype = float, initial = 7, 
+                          vmin = 0, vmax = 430, ro = True)
         
         self.settings.New(name ='x_factor', dtype = float, initial = 0.01733812949, 
                           ro = True)
@@ -55,8 +60,8 @@ class DAQMotorHW(HardwareComponent):
         self.settings.New(name ='terminal1', dtype = str, 
                           initial = '/Dev2/PFI13', ro = True)
         
-        self.settings.New(name ='frequency', dtype = float, initial = 8000, 
-                          ro = True, vmin = 1, vmax = 10000)
+        self.settings.New(name ='frequency', dtype = float, initial = 4000, 
+                          ro = False, vmin = 1, vmax = 10000)
         
         self.settings.New(name ='duty_cycle', dtype = float, initial = 0.5, 
                           ro = True, vmin = 0, vmax = 1)
@@ -102,18 +107,21 @@ class DAQMotorHW(HardwareComponent):
         
     def move_to(self):
         if self.settings.manual.value():
-            new_x = self.settings.move_to_x.value()
-            new_y = self.settings.move_to_y.value()
-            old_x = self.settings.x.value()
-            old_y = self.settings.y.value()
-            x_factor = self.settings.x_factor.value()
-            y_factor = self.settings.y_factor.value()
+            self.move_to_auto()
             
-            move_steps_x = int((new_x - old_x)/x_factor)
-            move_steps_y = int((new_y - old_y)/y_factor)
-            
-            pulses = np.array([move_steps_x,move_steps_y])
-            self.move_cartesian(pulses)
+    def move_to_auto(self):
+        new_x = self.settings.move_to_x.value()
+        new_y = self.settings.move_to_y.value()
+        old_x = self.settings.x.value()
+        old_y = self.settings.y.value()
+        x_factor = self.settings.x_factor.value()
+        y_factor = self.settings.y_factor.value()
+        
+        move_steps_x = int((new_x - old_x)/x_factor)
+        move_steps_y = int((new_y - old_y)/y_factor)
+        
+        pulses = np.array([move_steps_x,move_steps_y])
+        self.move_cartesian(pulses)
             
     def zero(self):
         if self.settings.manual.value():
