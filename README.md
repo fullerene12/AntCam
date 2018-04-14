@@ -59,7 +59,7 @@ There will be two output videos. zoomed_view.tif is the stablized closeup video 
 
 * **Hao Wu** - *Software Development* - [fullerene12](https://github.com/fullrene12) 
 * **Ryan Draft** - *hardware design and building, protocol design and testing*
-* **Souvik Mandal** - *hardware building, protocol design and testing*
+* **Souvik Mandal** - *protocol design, testing and artwork*
 * **Vikrant Kapoor** - *hardware design and building*
 
 ## License
