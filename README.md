@@ -37,13 +37,27 @@ YOUR_ANACONDA_PATH\python main_interface.py
 
 After you've modified the RunAntCam.bat, you can execute RunAntCam.bat to run the AntCam software with a command window, or execute RunAntCamQuiet.bat to run the software without a command window. You could create shortcut to these two files. The icon for AntCam is ant_icon.ico
 
-## List of drivers
+## Using AntCam
 
-To be continued...
+Please ask Hao Wu [fullerene12](https://github.com/fullrene12) to get a tutorial of the software.
+
+## Analysis Code
+
+The analysis code was written in Jupyter Notebook. In Anaconda Prompt, type in:
+
+```
+jupyter notebook
+```
+
+To get the Jupyter Notebook server to start up.
+
+In the base directory, use the notebook server to open video_analysis.ipynb, run the first cell, and set up the parameters in the second cell (e.g. file names and starting frame for data processing.). Output video will be saved at the same folder as the input data, in TIFF stacks.
+
+There will be two output videos. zoomed_view.tif is the stablized closeup video of the moving ant. wide_view.tif is the video of the entire arena while tracking. The two video are synchronized.
 
 ## Contributors
 
-* **Hao Wu** - *Software Development* - [fullerene12](https://github.com/fullrene12)
+* **Hao Wu** - *Software Development* - [fullerene12](https://github.com/fullrene12) 
 * **Ryan Draft** - *hardware design and building, protocol design and testing*
 * **Souvik Mandal** - *hardware building, protocol design and testing*
 * **Vikrant Kapoor** - *hardware design and building*

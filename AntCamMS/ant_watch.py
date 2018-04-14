@@ -104,6 +104,9 @@ class AntWatchMeasure(Measurement):
         build plots, etc.
         """
         # connect ui widgets to measurement/hardware settings or functions
+        self.settings.save_video.connect_to_widget(self.ui.save_video_checkBox)
+        self.settings.track_ant.connect_to_widget(self.ui.track_ant_checkBox)
+        
         self.ui.start_pushButton.clicked.connect(self.start)
         self.ui.interrupt_pushButton.clicked.connect(self.interrupt)
         self.ui.up_pushButton.clicked.connect(self.daqmotor.operations['up'])

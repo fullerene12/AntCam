@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>706</width>
+    <width>958</width>
     <height>716</height>
    </rect>
   </property>
@@ -25,7 +25,7 @@
   <property name="styleSheet">
    <string notr="true"/>
   </property>
-  <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,0,0,0,0,0,0,0,0,0,0">
+  <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,0,0">
    <item row="0" column="1" colspan="3">
     <widget class="QGroupBox" name="motor_groupBox">
      <property name="sizePolicy">
@@ -186,20 +186,20 @@
    <item row="0" column="0" rowspan="3">
     <widget class="QGroupBox" name="track_cam_groupBox_2">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+      <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
      <property name="minimumSize">
       <size>
-       <width>150</width>
-       <height>150</height>
+       <width>250</width>
+       <height>0</height>
       </size>
      </property>
      <property name="maximumSize">
       <size>
-       <width>100000</width>
+       <width>250</width>
        <height>10000</height>
       </size>
      </property>
@@ -231,23 +231,67 @@
          <string>Controls</string>
         </property>
         <layout class="QGridLayout" name="gridLayout">
+         <item row="2" column="0" colspan="2">
+          <widget class="QPushButton" name="interrupt_pushButton">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>100</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background-color: rgb(255, 0, 0);</string>
+           </property>
+           <property name="text">
+            <string>Interrupt</string>
+           </property>
+          </widget>
+         </item>
          <item row="1" column="0" colspan="2">
           <widget class="QPushButton" name="start_pushButton">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>50</height>
+            </size>
+           </property>
            <property name="styleSheet">
-            <string notr="true"/>
+            <string notr="true">background-color: rgb(170, 255, 0);</string>
            </property>
            <property name="text">
             <string>Start</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="0" colspan="2">
-          <widget class="QPushButton" name="interrupt_pushButton">
-           <property name="styleSheet">
-            <string notr="true"/>
-           </property>
+         <item row="3" column="0">
+          <widget class="QCheckBox" name="save_video_checkBox">
            <property name="text">
-            <string>Interrupt</string>
+            <string>Save </string>
+           </property>
+           <property name="shortcut">
+            <string>Ctrl+M</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QCheckBox" name="track_ant_checkBox">
+           <property name="text">
+            <string>Track</string>
+           </property>
+           <property name="shortcut">
+            <string>Ctrl+M</string>
            </property>
           </widget>
          </item>
@@ -257,22 +301,10 @@
       <item>
        <widget class="QGroupBox" name="tracker_groupBox">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>150</width>
-          <height>150</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>150</width>
-          <height>150</height>
-         </size>
         </property>
         <property name="baseSize">
          <size>
@@ -292,22 +324,10 @@
       <item>
        <widget class="QGroupBox" name="track_cam_groupBox">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>150</width>
-          <height>150</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>150</width>
-          <height>150</height>
-         </size>
         </property>
         <property name="baseSize">
          <size>
@@ -327,25 +347,13 @@
      </layout>
     </widget>
    </item>
-   <item row="1" column="2">
+   <item row="1" column="1" rowspan="2" colspan="3">
     <widget class="QGroupBox" name="wide_cam_groupBox">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>500</width>
-       <height>500</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>500</width>
-       <height>500</height>
-      </size>
      </property>
      <property name="styleSheet">
       <string notr="true"/>
