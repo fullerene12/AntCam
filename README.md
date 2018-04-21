@@ -39,7 +39,19 @@ After you've modified the RunAntCam.bat, you can execute RunAntCam.bat to run th
 
 ## Using AntCam
 
-Please ask Hao Wu [fullerene12](https://github.com/fullrene12) to get a tutorial of the software.
+To start AntCam, either start anaconda prompt, go to the directory of ant cam and type in
+
+```
+python main_interface.py
+```
+
+or use the shortcut from the desktop:
+![shortcut](img/shortcuts_screenshot.PNG)
+
+The GUI should start as follow:
+![GUI](img/AntCam_UI.PNG)
+
+If you have more questions, please ask Hao Wu [fullerene12](https://github.com/fullrene12) to get a tutorial of the software.
 
 ## Analysis Code
 
