@@ -70,12 +70,12 @@ class AntWatchMeasure(Measurement):
         # All settings are automatically added to the Microscope user interface
         self.settings.New('save_video', dtype = bool, initial = False)
         self.settings.New('track_ant',dtype = bool, initial = False)
-        self.settings.New('pixel_size', dtype = float, initial = 0.11095700416, ro = True)
-        self.settings.New('binning', dtype = int, initial = 8, ro = True)
-        self.settings.New('threshold', dtype = int, initial = 115, ro = False)
-        self.settings.New('proportional', dtype = float, initial = 0.15, ro = False)
+        self.settings.New('pixel_size', dtype = float, initial = 0.05547850208, ro = True)
+        self.settings.New('binning', dtype = int, initial = 16, ro = True)
+        self.settings.New('threshold', dtype = int, initial = 85, ro = False)
+        self.settings.New('proportional', dtype = float, initial = 0.12, ro = False)
         self.settings.New('integral', dtype = float, initial = 0, ro = False)
-        self.settings.New('derivative', dtype = float, initial = 0, ro = False)
+        self.settings.New('derivative', dtype = float, initial = 0.04, ro = False)
         
         # x and y is for transmitting signal
         self.settings.New('x',dtype = float, initial = 32, ro = True, vmin = 0, vmax = 63.5)
@@ -92,10 +92,8 @@ class AntWatchMeasure(Measurement):
         self.daqmotor = self.app.hardware['daqmotor']
         
         #setup experiment condition
-        self.track_cam.settings.frame_rate.update_value(15)
-        self.wide_cam.settings.frame_rate.update_value(15)
+        self.track_cam.settings.frame_rate.update_value(50)
         self.track_cam.read_from_hardware()
-        self.wide_cam.read_from_hardware()
 
     def setup_figure(self):
         """
@@ -163,25 +161,25 @@ class AntWatchMeasure(Measurement):
         """
         
         # check availability of display queue of the wide camera
-        if not hasattr(self,'wide_disp_queue'):
-            pass
-        elif self.wide_disp_queue.empty():
-            pass
-        else:
-            try:
-                wide_disp_image = self.wide_disp_queue.get()
-                
-                self.wide_disp_counter += 1
-                self.wide_disp_counter %= 2
-                if self.wide_disp_counter == 0:
-                    if type(wide_disp_image) == np.ndarray:
-                        if wide_disp_image.shape == (self.wide_cam.settings.height.value(),self.wide_cam.settings.width.value()):
-                            try:
-                                self.wide_cam_image.setImage(wide_disp_image)
-                            except Exception as ex:
-                                print('Error: %s' % ex)
-            except Exception as ex:
-                print("Error: %s" % ex)
+#         if not hasattr(self,'wide_disp_queue'):
+#             pass
+#         elif self.wide_disp_queue.empty():
+#             pass
+#         else:
+#             try:
+#                 wide_disp_image = self.wide_disp_queue.get()
+#                 
+#                 self.wide_disp_counter += 1
+#                 self.wide_disp_counter %= 2
+#                 if self.wide_disp_counter == 0:
+#                     if type(wide_disp_image) == np.ndarray:
+#                         if wide_disp_image.shape == (self.wide_cam.settings.height.value(),self.wide_cam.settings.width.value()):
+#                             try:
+#                                 self.wide_cam_image.setImage(wide_disp_image)
+#                             except Exception as ex:
+#                                 print('Error: %s' % ex)
+#             except Exception as ex:
+#                 print("Error: %s" % ex)
         
         # check availability of display queue of the track camera         
         if not hasattr(self,'track_disp_queue'):
@@ -192,8 +190,8 @@ class AntWatchMeasure(Measurement):
             try:
                 track_disp_image = self.track_disp_queue.get()
                 self.track_disp_counter += 1
-                self.wide_disp_counter %= 2
-                if self.wide_disp_counter == 0:
+                self.track_disp_counter %= 4
+                if self.track_disp_counter == 0:
                     if type(track_disp_image) == np.ndarray:
                         if track_disp_image.shape == (self.track_cam.settings.height.value(),self.track_cam.settings.width.value()):
                             try:
@@ -215,9 +213,13 @@ class AntWatchMeasure(Measurement):
         It should not update the graphical interface directly, and should only
         focus on data acquisition.
         """
+        self.buffer = np.zeros((30000,2))
         self.track_cam._dev.set_buffer_count(500)
-        self.wide_cam._dev.set_buffer_count(500)
-        #self.tracker_
+        
+        
+            # if enabled will create an HDF5 file with the plotted data
+            # first we create an H5 file (by default autosaved to app.settings['save_dir']
+            # This stores all the hardware and app meta-data in the H5 file
 
         if self.settings.save_video.value():
             save_dir = self.app.settings.save_dir.value()
@@ -226,15 +228,38 @@ class AntWatchMeasure(Measurement):
                 os.makedirs(data_path)
             except OSError:
                 print('directory already exist, writing to existing directory')
-            
+
+            frame_rate = self.track_cam.settings.frame_rate.value()
             self.recorder.settings.path.update_value(data_path)
-        
-            frame_rate = self.wide_cam.settings.frame_rate.value()
+            
             self.recorder.create_file('track_mov',frame_rate)
-            self.recorder.create_file('wide_mov',frame_rate)
+            
+            #save h5
+            file_name_index=0
+            file_name=os.path.join(self.recorder.settings.path.value(),'trail_'+str(file_name_index)+'.h5')
+            while os.path.exists(file_name):
+                file_name_index+=1
+                file_name=os.path.join(self.recorder.settings.path.value(),'/trail_'+str(file_name_index)+'.h5')
+            
+            self.h5file = h5_io.h5_base_file(app=self.app, measurement=self,fname = file_name)
+            
+            # create a measurement H5 group (folder) within self.h5file
+            # This stores all the measurement meta-data in this group
+            self.h5_group = h5_io.h5_create_measurement_group(measurement=self, h5group=self.h5file)
+        
+
+            # create an h5 dataset to store the data
+            self.buffer_h5 = self.h5_group.create_dataset(name  = 'buffer', 
+                                                          shape = self.buffer.shape,
+                                                          dtype = self.buffer.dtype)
+            
+            
+        
+
+#             self.recorder.create_file('wide_mov',frame_rate)
         
         self.track_disp_queue = queue.Queue(1000)
-        self.wide_disp_queue = queue.Queue(1000)
+#         self.wide_disp_queue = queue.Queue(1000)
         self.motor_queue = queue.Queue(1000)
         self.comp_thread = SubMeasurementQThread(self.camera_action)
         self.motor_thread = SubMeasurementQThread(self.motor_action)
@@ -250,9 +275,13 @@ class AntWatchMeasure(Measurement):
 
         try:
             self.track_i = 0
-            self.wide_i = 0
+            self.i = 0
+#             self.wide_i = 0
+            
+            self.track_flag = False
+            
             self.track_cam.start()
-            self.wide_cam.start()
+#             self.wide_cam.start()
             self.comp_thread.start()
             self.motor_thread.start()
             
@@ -273,7 +302,7 @@ class AntWatchMeasure(Measurement):
 
         finally:
             self.track_cam.stop()
-            self.wide_cam.stop()
+#             self.wide_cam.stop()
             if self.settings.save_video.value():
                 self.recorder.close()
             
@@ -281,49 +310,68 @@ class AntWatchMeasure(Measurement):
             del self.comp_thread
             del self.motor_queue
             del self.track_disp_queue
-            del self.wide_disp_queue
+#             del self.wide_disp_queue
 
     def camera_action(self):
         '''
         format the image properly, and find centroid on the track cam
         '''
         try:
-            self.track_i +=1
-            self.track_i %= 2
+            self.i += 1
+            self.track_i += 1
+            self.track_i %= 6
             track_image = self.track_cam.read()
-            if self.settings.save_video.value():
-                self.recorder.save_frame('track_mov',track_image)
-            if self.track_i == 0:
-                time.sleep(0.001)
-                track_data = self.track_cam._dev.to_numpy(track_image)
-                track_disp_data = np.copy(track_data)
-                self.track_disp_queue.put(np.fliplr(track_disp_data.transpose()))
-                try:
-                    cms = find_centroid(image = track_data, 
-                                        threshold = self.settings.threshold.value(), 
-                                        binning = self.settings.binning.value())
-                    tracker_size = self.track_cam.settings.height.value()//self.settings.binning.value()
-                    self.settings.x.update_value(cms[1])
-                    self.settings.y.update_value(tracker_size - cms[0])
-                    if self.settings.track_ant.value():
-                        self.motor_queue.put((cms[1],tracker_size - cms[0]))
-                except Exception as ex:
-                    print('CMS Error : %s' % ex)
+            
+            if self.track_flag:
+                if self.settings.save_video.value():
+                    self.recorder.save_frame('track_mov',track_image)
+                    self.buffer[self.i,0] = self.daqmotor.settings.x.value()
+                    self.buffer[self.i,1] = self.daqmotor.settings.y.value()
+                    self.buffer_h5[self.i,:] = self.buffer[self.i,:]
+                    self.h5file.flush()
+                if self.track_i % 2 == 0:
+                    time.sleep(0.001)
+                    track_data = self.track_cam._dev.to_numpy(track_image)
+                    track_disp_data = np.copy(track_data)
+                    self.track_disp_queue.put(np.fliplr(track_disp_data.transpose()))
+                    try:
+                        cms = find_centroid(image = track_data, 
+                                            threshold = self.settings.threshold.value(), 
+                                            binning = self.settings.binning.value())
+                        tracker_size = self.track_cam.settings.height.value()//self.settings.binning.value()
+                        self.settings.x.update_value(cms[1])
+                        self.settings.y.update_value(tracker_size - cms[0])
+                        if self.settings.track_ant.value():
+                            self.motor_queue.put((cms[1],tracker_size - cms[0]))
+                    except Exception as ex:
+                        print('CMS Error : %s' % ex)
+            else:
+                if self.track_i == 0:
+                    time.sleep(0.001)
+                    track_data = self.track_cam._dev.to_numpy(track_image)
+                    track_disp_data = np.copy(track_data)
+                    self.track_disp_queue.put(np.fliplr(track_disp_data.transpose()))
+                    if track_data.min()< self.settings.threshold.value():
+                        self.track_flag = True
+                
         except Exception as ex:
             print('Error : %s' % ex)
             
-        try:
-            self.wide_i += 1
-            self.wide_i %= 5
-            wide_image= self.wide_cam.read()
-            if self.settings.save_video.value():
-                self.recorder.save_frame('wide_mov',wide_image)
-            if self.wide_i == 0:
-                time.sleep(0.001)
-                wide_data = self.wide_cam._dev.to_numpy(wide_image)
-                self.wide_disp_queue.put(wide_data)
-        except Exception as ex:
-            print('Error : %s' % ex)
+#         try:
+#             self.wide_i += 1
+#             self.wide_i %= 5
+#             wide_image= self.wide_cam.read()
+#             
+#             if self.track_flag:
+#                 if self.settings.save_video.value():
+#                     self.recorder.save_frame('wide_mov',wide_image)
+#                 if self.wide_i == 0:
+#                     time.sleep(0.001)
+#                     wide_data = self.wide_cam._dev.to_numpy(wide_image)
+#                     self.wide_disp_queue.put(wide_data)
+#         except Exception as ex:
+#             print('Error : %s' % ex)
+            
             
     def motor_action(self):
         if self.settings.track_ant.value():

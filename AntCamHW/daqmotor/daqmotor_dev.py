@@ -64,7 +64,7 @@ if __name__ == '__main__':
     motor = DAQMotorDev(chans ='Dev2/port0/line5,Dev2/port1/line0,Dev2/port0/line1,Dev2/port1/line1',
                         counter = ['Dev2/ctr0','Dev2/ctr1'],
                         term =  ['/Dev2/PFI12','/Dev2/PFI13'],
-                        freq = 4000,
+                        freq = 8000,
                         dc = 0.5)
     motor.move([0,1],[0,800])
 

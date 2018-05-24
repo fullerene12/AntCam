@@ -66,7 +66,7 @@ class DAQMotorHW(HardwareComponent):
         self.settings.New(name ='duty_cycle', dtype = float, initial = 0.5, 
                           ro = True, vmin = 0, vmax = 1)
         
-        self.settings.New(name = 'max_steps', dtype = int, initial = 250,
+        self.settings.New(name = 'max_steps', dtype = int, initial = 70,
                           ro = True, vmin = 100, vmax =300)
         
         self.settings.New(name = 'manual', dtype = bool, initial = False)

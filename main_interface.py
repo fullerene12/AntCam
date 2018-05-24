@@ -72,7 +72,7 @@ if __name__ == '__main__':
     
     app.ui.setWindowIcon(QtGui.QIcon('ant_icon.ico'))
     app.hardware['track_cam'].connected.update_value(True)
-    app.hardware['wide_cam'].connected.update_value(True)
+    #app.hardware['wide_cam'].connected.update_value(True)
     app.hardware['flirrec'].connected.update_value(True)
     app.hardware['daqmotor'].connected.update_value(True)
     #app.hardware['daq_timer'].connected.update_value(True)

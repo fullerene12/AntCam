@@ -22,7 +22,7 @@ class FLIRCamHW(HardwareComponent):
         self.settings.New(name = 'auto_exposure', dtype = bool, initial = True, ro = False)
         self.settings.New(name = 'exposure_time', dtype = float, initial = 1000, ro = False)
         self.settings.New(name = 'video_mode', dtype = int, initial = 0, ro = False, vmin = 0, vmax = 2)
-        self.settings.New(name = 'frame_rate', dtype = float, initial = 30, ro = False, vmin = 0, vmax = 100)
+        self.settings.New(name = 'frame_rate', dtype = float, initial = 60, ro = False, vmin = 0, vmax = 100)
         
         
                 
