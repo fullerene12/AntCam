@@ -104,10 +104,3 @@ class PIDController(object):
                 output += self.d * deriv
             self.last_error = error
         return output
-            
-            
-        
-
-
-if __name__ == '__main__':
-    pass

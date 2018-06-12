@@ -40,9 +40,10 @@ class AntCamApp(BaseMicroscopeApp):
         
         from AntCamHW.flircam.flirrec_hw import FLIRRecHW
         self.add_hardware(FLIRRecHW(self))
-        
-        from AntCamHW.daqmotor.daqmotor_hw import DAQMotorHW
-        self.add_hardware(DAQMotorHW(self))
+        from AntCamHW.tinyg.tinyg_hw import TinyGHW
+        self.add_hardware(TinyGHW(self))
+#         from AntCamHW.daqmotor.daqmotor_hw import DAQMotorHW
+#         self.add_hardware(DAQMotorHW(self))
         
         #self.add_hardware(DAQTimerHW(self))
 
@@ -74,7 +75,7 @@ if __name__ == '__main__':
     app.hardware['track_cam'].connected.update_value(True)
     #app.hardware['wide_cam'].connected.update_value(True)
     app.hardware['flirrec'].connected.update_value(True)
-    app.hardware['daqmotor'].connected.update_value(True)
+    app.hardware['tinyg'].connected.update_value(True)
     #app.hardware['daq_timer'].connected.update_value(True)
     
     sys.exit(app.exec_())
