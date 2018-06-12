@@ -89,7 +89,7 @@ class AntWatchMeasure(Measurement):
         self.track_cam = self.app.hardware['track_cam']
         self.wide_cam = self.app.hardware['wide_cam']
         self.recorder = self.app.hardware['flirrec']
-        self.daqmotor = self.app.hardware['tinyg']
+        self.daqmotor = self.app.hardware['daqmotor']
         
         #setup experiment condition
         self.track_cam.settings.frame_rate.update_value(50)
@@ -112,7 +112,7 @@ class AntWatchMeasure(Measurement):
         self.ui.left_pushButton.clicked.connect(self.daqmotor.operations['left'])
         self.ui.right_pushButton.clicked.connect(self.daqmotor.operations['right'])
         self.daqmotor.settings.manual.connect_to_widget(self.ui.manual_checkBox)
-        self.daqmotor.settings.manual_mm.connect_to_widget(self.ui.manual_steps_doubleSpinBox)
+        self.daqmotor.settings.manual_steps.connect_to_widget(self.ui.manual_steps_doubleSpinBox)
         
         self.daqmotor.settings.x.connect_to_widget(self.ui.x_doubleSpinBox)
         self.daqmotor.settings.y.connect_to_widget(self.ui.y_doubleSpinBox)
@@ -319,7 +319,7 @@ class AntWatchMeasure(Measurement):
         try:
             self.i += 1
             self.track_i += 1
-            self.track_i %= 10
+            self.track_i %= 6
             track_image = self.track_cam.read()
             
             if self.track_flag:
@@ -380,8 +380,14 @@ class AntWatchMeasure(Measurement):
             error_y = (cords[1] - self.midpoint) * self.pix_size
             x_fb = self.pid.feedback(error_x)
             y_fb = self.pid.feedback(error_y)
-            self.daqmotor.move_cartesian_delta(x_fb,y_fb)
+            new_x = self.daqmotor.settings.x.value() + x_fb
+            new_y = self.daqmotor.settings.y.value() + y_fb
+            if new_x > self.daqmotor.settings.bound_x.value() and new_x < self.daqmotor.settings.move_to_x.vmax:
+                self.daqmotor.settings.move_to_x.update_value(new_x)
+            if new_y > self.daqmotor.settings.bound_y.value() and new_y < self.daqmotor.settings.move_to_y.vmax:
+                self.daqmotor.settings.move_to_y.update_value(new_y)
+            self.daqmotor.move_to_auto()
         else:
-            time.sleep(0.1)
+            time.sleep(0.2)
                 
 
