@@ -239,7 +239,7 @@ class AntWatchMeasure(Measurement):
             file_name=os.path.join(self.recorder.settings.path.value(),'trail_'+str(file_name_index)+'.h5')
             while os.path.exists(file_name):
                 file_name_index+=1
-                file_name=os.path.join(self.recorder.settings.path.value(),'/trail_'+str(file_name_index)+'.h5')
+                file_name=os.path.join(self.recorder.settings.path.value(),'trail_'+str(file_name_index)+'.h5')
             
             self.h5file = h5_io.h5_base_file(app=self.app, measurement=self,fname = file_name)
             
@@ -310,6 +310,7 @@ class AntWatchMeasure(Measurement):
             del self.comp_thread
             del self.motor_queue
             del self.track_disp_queue
+            self.h5file.close()
 #             del self.wide_disp_queue
 
     def camera_action(self):
