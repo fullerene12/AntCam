@@ -29,15 +29,16 @@ class DAQMotorHW(HardwareComponent):
         self.settings.New(name ='move_to_y', dtype = float, initial = 0, 
                           vmin = 0, vmax = 430, ro = False)
         
-        self.settings.New(name ='bound_x', dtype = float, initial = 7, 
+        self.settings.New(name ='bound_x', dtype = float, initial = 0, 
                           vmin = 0, vmax = 450, ro = False)
-        self.settings.New(name ='bound_y', dtype = float, initial = 7, 
+        self.settings.New(name ='bound_y', dtype = float, initial = 0, 
                           vmin = 0, vmax = 430, ro = False)
         
         self.settings.New(name ='home_x', dtype = float, initial = 223.64, 
+        self.settings.New(name ='home_x', dtype = float, initial = 194.79, 
                           vmin = 0, vmax = 450, ro = True)
         
-        self.settings.New(name ='home_y', dtype = float, initial = 7, 
+        self.settings.New(name ='home_y', dtype = float, initial = 0.40, 
                           vmin = 0, vmax = 430, ro = True)
         
         self.settings.New(name ='x_factor', dtype = float, initial = 0.01733812949, 
