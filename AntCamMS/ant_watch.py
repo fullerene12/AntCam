@@ -75,7 +75,7 @@ class AntWatchMeasure(Measurement):
         self.settings.New('threshold', dtype = int, initial = 85, ro = False)
         self.settings.New('proportional', dtype = float, initial = 0.12, ro = False)
         self.settings.New('integral', dtype = float, initial = 0, ro = False)
-        self.settings.New('derivative', dtype = float, initial = 0.04, ro = False)
+        self.settings.New('derivative', dtype = float, initial = 0.05, ro = False)
         
         # x and y is for transmitting signal
         self.settings.New('x',dtype = float, initial = 32, ro = True, vmin = 0, vmax = 63.5)
@@ -240,7 +240,7 @@ class AntWatchMeasure(Measurement):
             while os.path.exists(file_name):
                 file_name_index+=1
                 file_name=os.path.join(self.recorder.settings.path.value(),'trail_'+str(file_name_index)+'.h5')
-            
+        
             self.h5file = h5_io.h5_base_file(app=self.app, measurement=self,fname = file_name)
             
             # create a measurement H5 group (folder) within self.h5file
@@ -310,7 +310,9 @@ class AntWatchMeasure(Measurement):
             del self.comp_thread
             del self.motor_queue
             del self.track_disp_queue
-            self.h5file.close()
+            if self.settings.save_video.value():
+                self.recorder.close()
+                self.h5file.close()
 #             del self.wide_disp_queue
 
     def camera_action(self):
@@ -348,12 +350,13 @@ class AntWatchMeasure(Measurement):
                         print('CMS Error : %s' % ex)
             else:
                 if self.track_i == 0:
-                    time.sleep(0.001)
                     track_data = self.track_cam._dev.to_numpy(track_image)
-                    track_disp_data = np.copy(track_data)
-                    self.track_disp_queue.put(np.fliplr(track_disp_data.transpose()))
+                    if not self.settings.track_ant.value():
+                        track_disp_data = np.copy(track_data)
+                        self.track_disp_queue.put(np.fliplr(track_disp_data.transpose()))
                     if track_data.min()< self.settings.threshold.value():
                         self.track_flag = True
+            
                 
         except Exception as ex:
             print('Error : %s' % ex)

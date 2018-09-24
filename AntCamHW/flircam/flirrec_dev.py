@@ -33,7 +33,7 @@ class Recorder(object):
             
         
         #create instance for recorder    
-        self.rec = PySpin.AVIRecorder()
+        self.rec = PySpin.SpinVideo()
         
         if os.path.exists(self.fname + '-0000.avi'):
             print("File already exists, saving with timestamp")
@@ -41,19 +41,19 @@ class Recorder(object):
             self.fname = self.fname + timestamp
         #create file
         try:
-            self.rec.AVIOpen(self.fname,option)
+            self.rec.Open(self.fname,option)
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
         
     def save_frame(self,image):
         try:
-            self.rec.AVIAppend(image)
+            self.rec.Append(image)
         except PySpin.SpinnakerException as ex:
             print("Error: %s" % ex)
             
         
     def close(self):
-        self.rec.AVIClose()
+        self.rec.Close()
     
 class FLIRRecDev(object):
     '''
