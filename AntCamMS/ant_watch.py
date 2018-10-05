@@ -386,9 +386,17 @@ class AntWatchMeasure(Measurement):
             y_fb = self.pid.feedback(error_y)
             new_x = self.daqmotor.settings.x.value() + x_fb
             new_y = self.daqmotor.settings.y.value() + y_fb
-            if new_x > self.daqmotor.settings.bound_x.value() and new_x < self.daqmotor.settings.move_to_x.vmax:
+            if new_x < self.daqmotor.settings.bound_x.value():
+                self.daqmotor.settings.move_to_x.update_value(self.daqmotor.settings.bound_x.value()+2)
+            elif new_x > self.daqmotor.settings.move_to_x.vmax:
+                self.daqmotor.settings.move_to_x.update_value(self.daqmotor.settings.move_to_x.vmax-2)
+            else:
                 self.daqmotor.settings.move_to_x.update_value(new_x)
-            if new_y > self.daqmotor.settings.bound_y.value() and new_y < self.daqmotor.settings.move_to_y.vmax:
+            if new_y < self.daqmotor.settings.bound_y.value():
+                self.daqmotor.settings.move_to_y.update_value(self.daqmotor.settings.bound_y.value()+2)
+            elif new_y > self.daqmotor.settings.move_to_y.vmax:
+                self.daqmotor.settings.move_to_y.update_value(self.daqmotor.settings.move_to_y.vmax-2)
+            else:
                 self.daqmotor.settings.move_to_y.update_value(new_y)
             self.daqmotor.move_to_auto()
         else:

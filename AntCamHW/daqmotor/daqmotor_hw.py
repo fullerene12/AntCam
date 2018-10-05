@@ -25,20 +25,20 @@ class DAQMotorHW(HardwareComponent):
         self.settings.New(name = 'y_steps', dtype = int, initial = 0, ro = True)
         
         self.settings.New(name ='move_to_x', dtype = float, initial = 0, 
-                          vmin = 0, vmax = 450, ro = False)
+                          vmin = 0, vmax = 400, ro = False)
         self.settings.New(name ='move_to_y', dtype = float, initial = 0, 
-                          vmin = 0, vmax = 430, ro = False)
+                          vmin = 0, vmax = 400, ro = False)
         
         self.settings.New(name ='bound_x', dtype = float, initial = 0, 
-                          vmin = 0, vmax = 450, ro = False)
+                          vmin = 0, vmax = 400, ro = False)
         self.settings.New(name ='bound_y', dtype = float, initial = 0, 
-                          vmin = 0, vmax = 430, ro = False)
+                          vmin = 0, vmax = 400, ro = False)
         
         self.settings.New(name ='home_x', dtype = float, initial = 194.79, 
-                          vmin = 0, vmax = 450, ro = True)
+                          vmin = 0, vmax = 400, ro = True)
         
         self.settings.New(name ='home_y', dtype = float, initial = 0.40, 
-                          vmin = 0, vmax = 430, ro = True)
+                          vmin = 0, vmax = 400, ro = True)
         
         self.settings.New(name ='x_factor', dtype = float, initial = 0.01733812949, 
                           ro = True)
@@ -60,7 +60,7 @@ class DAQMotorHW(HardwareComponent):
         self.settings.New(name ='terminal1', dtype = str, 
                           initial = '/Dev2/PFI13', ro = True)
         
-        self.settings.New(name ='frequency', dtype = float, initial = 4000, 
+        self.settings.New(name ='frequency', dtype = float, initial = 8000, 
                           ro = False, vmin = 1, vmax = 10000)
         
         self.settings.New(name ='duty_cycle', dtype = float, initial = 0.5, 
