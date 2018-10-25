@@ -130,16 +130,24 @@ class AntWatchMeasure(Measurement):
         self.ui.track_cam_groupBox.layout().addWidget(self.track_cam_layout)
         self.ui.tracker_groupBox.layout().addWidget(self.tracker_layout)
         
+        '''
+        Clean up this at some point
+        '''
         #create camera image graphs
         self.wide_cam_view=pg.ViewBox()
-        self.wide_cam_layout.addItem(self.wide_cam_view)
-        self.wide_cam_image=pg.ImageItem()
-        self.wide_cam_view.addItem(self.wide_cam_image)
-        
         self.track_cam_view=pg.ViewBox()
-        self.track_cam_layout.addItem(self.track_cam_view)
+        self.wide_cam_layout.addItem(self.track_cam_view)
+        self.wide_cam_image=pg.ImageItem()
         self.track_cam_image=pg.ImageItem()
         self.track_cam_view.addItem(self.track_cam_image)
+        self.track_histogram = pg.HistogramLUTItem(self.track_cam_image)
+        self.wide_cam_layout.addItem(self.track_histogram)
+        self.track_histogram.setLevels(0,200)
+        
+        #self.track_cam_view=pg.ViewBox()
+        #self.track_cam_layout.addItem(self.track_cam_view)
+        #self.track_cam_image=pg.ImageItem()
+        #self.track_cam_view.addItem(self.track_cam_image)
         
         self.tracker_view=pg.ViewBox()
         self.tracker_layout.addItem(self.tracker_view)
@@ -213,7 +221,7 @@ class AntWatchMeasure(Measurement):
         It should not update the graphical interface directly, and should only
         focus on data acquisition.
         """
-        self.buffer = np.zeros((30000,2))
+        self.buffer = np.zeros((60000,2))
         self.track_cam._dev.set_buffer_count(500)
         
         
